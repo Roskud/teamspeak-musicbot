@@ -1,9 +1,8 @@
 run = true
 
 [connect]
-# Укажите IP адрес вашего TeamSpeak сервера (например, "127.0.0.1" или "ts.myserver.ru")
 address = "127.0.0.1"
-name = "🎵 MusicBot (VK | SC | Radio)"
+name = "🎵 MusicBot"
 
 [connect.identity]
 key = ""
@@ -15,3 +14,80 @@ volume = { default = 50.0, min = 0.0, max = 100.0 }
 max_user_volume = 100.0
 bitrate = 64
 send_mode = "voice"
+
+[commands]
+matcher = "exact"
+
+[commands.alias]
+# Subcommands for !radio <1..11>
+"radio 1" = "!play https://live.hunter.fm/lofi_high"
+"radio 2" = "!play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
+"radio 3" = "!play https://play.streamafrica.net/lofi-hip-hop"
+"radio 4" = "!play https://stream.nightride.fm/chillsynth.mp3"
+"radio 5" = "!play https://hls-01-radiorecord.hostingradio.ru/record/playlist.m3u8"
+"radio 6" = "!play http://dfm.hostingradio.ru/dfm128.mp3"
+"radio 7" = "!play http://ep128.hostingradio.ru:8030/ep128"
+"radio 8" = "!play http://pub0102.101.ru:8000/stream/air/aac/64/99"
+"radio 9" = "!play http://pub0102.101.ru:8000/stream/air/aac/64/200"
+"radio 10" = "!play https://nashe1.hostingradio.ru/nashe-128.mp3"
+"radio 11" = "!play https://radio-holding.ru:9433/marusya_default"
+
+# Subcommands for !radio by genre/name
+"radio lofi" = "!play https://live.hunter.fm/lofi_high"
+"radio chillhop" = "!play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
+"radio girl" = "!play https://play.streamafrica.net/lofi-hip-hop"
+"radio synth" = "!play https://stream.nightride.fm/chillsynth.mp3"
+"radio record" = "!play https://hls-01-radiorecord.hostingradio.ru/record/playlist.m3u8"
+"radio dfm" = "!play http://dfm.hostingradio.ru/dfm128.mp3"
+"radio europa" = "!play http://ep128.hostingradio.ru:8030/ep128"
+"radio energy" = "!play http://pub0102.101.ru:8000/stream/air/aac/64/99"
+"radio relax" = "!play http://pub0102.101.ru:8000/stream/air/aac/64/200"
+"radio nashe" = "!play https://nashe1.hostingradio.ru/nashe-128.mp3"
+"radio marusya" = "!play https://radio-holding.ru:9433/marusya_default"
+
+# Full list via !radio list
+"radio list" = "!print [b][color=#fbc531]📻 RADIO STATIONS:[/color][/b]\n• [b]!radio 1[/b] - Hunter FM Lo-Fi Hip Hop\n• [b]!radio 2[/b] - FluxFM Chillhop HQ\n• [b]!radio 3[/b] - Lo-Fi Girl 24/7\n• [b]!radio 4[/b] - Nightride Chillsynth\n• [b]!radio 5[/b] - Radio Record (Dance)\n• [b]!radio 6[/b] - DFM (Club/EDM)\n• [b]!radio 7[/b] - Europa Plus (Hits)\n• [b]!radio 8[/b] - Energy NRJ\n• [b]!radio 9[/b] - Relax FM (Chillout)\n• [b]!radio 10[/b] - Nashe Radio (Rock)\n• [b]!radio 11[/b] - Marusya FM (Pop)\n[i]To play type !radio <1..11> (e.g. !radio 1)[/i]"
+
+# Also short aliases: !r 1, !r 2 ...
+"r 1" = "!play https://live.hunter.fm/lofi_high"
+"r 2" = "!play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
+"r 3" = "!play https://play.streamafrica.net/lofi-hip-hop"
+"r 4" = "!play https://stream.nightride.fm/chillsynth.mp3"
+"r 5" = "!play https://hls-01-radiorecord.hostingradio.ru/record/playlist.m3u8"
+"r 6" = "!play http://dfm.hostingradio.ru/dfm128.mp3"
+"r 7" = "!play http://ep128.hostingradio.ru:8030/ep128"
+"r 8" = "!play http://pub0102.101.ru:8000/stream/air/aac/64/99"
+"r 9" = "!play http://pub0102.101.ru:8000/stream/air/aac/64/200"
+"r 10" = "!play https://nashe1.hostingradio.ru/nashe-128.mp3"
+"r 11" = "!play https://radio-holding.ru:9433/marusya_default"
+
+# Dedicated alias !stations to show the full list
+stations = "!print [b][color=#fbc531]📻 RADIO STATIONS:[/color][/b]\n• [b]!radio 1[/b] - Hunter FM Lo-Fi Hip Hop\n• [b]!radio 2[/b] - FluxFM Chillhop HQ\n• [b]!radio 3[/b] - Lo-Fi Girl 24/7\n• [b]!radio 4[/b] - Nightride Chillsynth\n• [b]!radio 5[/b] - Radio Record (Dance)\n• [b]!radio 6[/b] - DFM (Club/EDM)\n• [b]!radio 7[/b] - Europa Plus (Hits)\n• [b]!radio 8[/b] - Energy NRJ\n• [b]!radio 9[/b] - Relax FM (Chillout)\n• [b]!radio 10[/b] - Nashe Radio (Rock)\n• [b]!radio 11[/b] - Marusya FM (Pop)\n[i]To play type !radio <1..11> (e.g. !radio 1)[/i]"
+
+# Direct station aliases
+lofi = "!play https://live.hunter.fm/lofi_high"
+chillhop = "!play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
+record = "!play https://hls-01-radiorecord.hostingradio.ru/record/playlist.m3u8"
+dfm = "!play http://dfm.hostingradio.ru/dfm128.mp3"
+europa = "!play http://ep128.hostingradio.ru:8030/ep128"
+energy = "!play http://pub0102.101.ru:8000/stream/air/aac/64/99"
+relax = "!play http://pub0102.101.ru:8000/stream/air/aac/64/200"
+nashe = "!play https://nashe1.hostingradio.ru/nashe-128.mp3"
+marusya = "!play https://radio-holding.ru:9433/marusya_default"
+
+# English shortcuts
+p = "!play"
+s = "!stop"
+n = "!next"
+skip = "!next"
+q = "!list"
+queue = "!list"
+vol = "!volume"
+np = "!song"
+
+[reconnect]
+ontimeout = ["1s", "2s", "5s", "10s", "30s", "1m", "5m", "repeat last"]
+onkick = ["3s", "repeat last"]
+onban = []
+onerror = ["10s", "repeat last"]
+onshutdown = ["5m"]
