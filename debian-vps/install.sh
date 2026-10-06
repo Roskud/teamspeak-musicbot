@@ -52,6 +52,7 @@ cp "$SCRIPT_DIR/config/bots/default/bot.toml" /opt/ts3audiobot/bots/default/bot.
 cp "$SCRIPT_DIR/config/disable_ytdl.sh" /opt/ts3audiobot/disable_ytdl.sh
 chmod +x /opt/ts3audiobot/disable_ytdl.sh
 cp "$SCRIPT_DIR/ym_bridge.py" /opt/ts3audiobot/ym_bridge.py
+cp "$SCRIPT_DIR/config/ym_logo.png" /opt/ts3audiobot/ym_logo.png
 
 # Создание стартового скрипта start.sh
 cat << 'EOF' > /opt/ts3audiobot/start.sh

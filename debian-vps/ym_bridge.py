@@ -20,29 +20,55 @@ except ImportError:
 
 STREAM_HOST = "127.0.0.1"
 STREAM_PORT = 58925
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOGO_FILE = os.path.join(BASE_DIR, "ym_logo.png")
 
 class StreamHandler(http.server.BaseHTTPRequestHandler):
     current_stream_url = ""
     current_title = ""
+    current_cover_url = ""
 
     def do_GET(self):
+        # 1. Stream endpoint (302 redirect to Yandex Music MP3 link)
         if self.path.startswith("/stream"):
             if StreamHandler.current_stream_url:
                 self.send_response(302)
                 self.send_header("Location", StreamHandler.current_stream_url)
                 self.send_header("Content-Type", "audio/mpeg")
+                self.send_header("Connection", "close")
                 self.end_headers()
             else:
                 self.send_response(404)
                 self.end_headers()
-        else:
-            self.send_response(200)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            return
+
+        # 2. Local Yandex Music logo icon endpoint
+        if self.path == "/ym_logo.png" or self.path.startswith("/ym_logo"):
+            if os.path.exists(LOGO_FILE):
+                try:
+                    with open(LOGO_FILE, "rb") as f:
+                        data = f.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/png")
+                    self.send_header("Content-Length", str(len(data)))
+                    self.send_header("Cache-Control", "public, max-age=86400")
+                    self.end_headers()
+                    self.wfile.write(data)
+                    return
+                except Exception:
+                    pass
+            self.send_response(404)
             self.end_headers()
-            self.wfile.write(b"Yandex Music Bridge Streaming Server OK")
+            return
+
+        # 3. Health check endpoint
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(b"TeamSpeak 6 Yandex Music Bridge OK")
 
     def log_message(self, format, *args):
-        # Silence HTTP access logs
+        # Silence HTTP access logs to keep CPU and disk usage minimal
         pass
 
 def start_stream_server(host=STREAM_HOST, port=STREAM_PORT):
@@ -50,7 +76,7 @@ def start_stream_server(host=STREAM_HOST, port=STREAM_PORT):
     server = socketserver.TCPServer((host, port), StreamHandler)
     t = threading.Thread(target=server.serve_forever, daemon=True)
     t.start()
-    print(f"[STREAM] Local audio stream server listening on http://{host}:{port}")
+    print(f"[STREAM] Local audio & avatar server active on http://{host}:{port}")
     return server
 
 def ts3_escape(s: str) -> str:
@@ -203,11 +229,21 @@ class TS3Bridge:
         cmd = f"sendtextmessage targetmode=2 msg={esc}\n"
         self.tn.write(cmd.encode('utf-8'))
 
+    def set_bot_avatar(self, cover_url):
+        if cover_url:
+            self.command_bot(f"!bot avatar set {cover_url}")
+        else:
+            local_logo = f"http://127.0.0.1:{self.stream_port}/ym_logo.png"
+            self.command_bot(f"!bot avatar set {local_logo}")
+
+    def clear_bot_avatar(self):
+        self.command_bot("!bot avatar clear")
+
     def resolve_yandex(self, query):
         if not self.ym_client:
             self.init_ym()
         if not self.ym_client:
-            return None, "Не удалось подключиться к сервису Яндекс.Музыка."
+            return None, "Не удалось подключиться к сервису Яндекс.Музыка.", None
 
         track = None
         # Check if direct track URL (e.g. music.yandex.ru/album/123/track/456 or /track/456)
@@ -218,7 +254,7 @@ class TS3Bridge:
                 if tracks:
                     track = tracks[0]
             except Exception as e:
-                return None, f"Ошибка загрузки трека: {e}"
+                return None, f"Ошибка загрузки трека: {e}", None
         else:
             try:
                 clean_q = re.sub(r'^(ym:|play\s+|p\s+)', '', query, flags=re.I).strip()
@@ -226,15 +262,15 @@ class TS3Bridge:
                 if search and search.tracks and search.tracks.results:
                     track = search.tracks.results[0]
             except Exception as e:
-                return None, f"Ошибка поиска трека: {e}"
+                return None, f"Ошибка поиска трека: {e}", None
 
         if not track:
-            return None, f"Трек не найден на Яндекс.Музыке: {query}"
+            return None, f"Трек не найден на Яндекс.Музыке: {query}", None
 
         try:
             d_info = track.get_download_info()
             if not d_info:
-                return None, "Прямой поток трека недоступен."
+                return None, "Прямой поток трека недоступен.", None
             best = sorted(d_info, key=lambda x: getattr(x, 'bitrate_in_kbps', 0), reverse=True)[0]
             direct_link = best.get_direct_link()
             artists = ", ".join(a.name for a in track.artists) if track.artists else "Исполнитель"
@@ -244,9 +280,17 @@ class TS3Bridge:
                 m, s = divmod(sec, 60)
                 duration = f" [{m:02d}:{s:02d}]"
             full_title = f"{artists} — {track.title}{duration}"
-            return direct_link, full_title
+
+            # Resolve cover image
+            cover_url = None
+            if track.cover_uri:
+                cover_url = f"https://{track.cover_uri.replace('%%', '400x400')}"
+            else:
+                cover_url = f"http://127.0.0.1:{self.stream_port}/ym_logo.png"
+
+            return direct_link, full_title, cover_url
         except Exception as e:
-            return None, f"Ошибка получения аудиопотока: {e}"
+            return None, f"Ошибка получения аудиопотока: {e}", None
 
     def handle_msg(self, text, invoker):
         raw = text.strip()
@@ -273,6 +317,7 @@ class TS3Bridge:
             if arg in RADIO_STATIONS:
                 name, url = RADIO_STATIONS[arg]
                 self.send_channel_msg(f"[b][color=#fbc531]📻 Запуск радио:[/color] {name}[/b]")
+                self.set_bot_avatar(f"http://127.0.0.1:{self.stream_port}/ym_logo.png")
                 self.command_bot(f"!play {url}")
                 self.current_track_title = f"Радио: {name}"
                 StreamHandler.current_title = f"Радио: {name}"
@@ -284,6 +329,7 @@ class TS3Bridge:
         if cmd in ["r"] and arg in RADIO_STATIONS:
             name, url = RADIO_STATIONS[arg]
             self.send_channel_msg(f"[b][color=#fbc531]📻 Запуск радио:[/color] {name}[/b]")
+            self.set_bot_avatar(f"http://127.0.0.1:{self.stream_port}/ym_logo.png")
             self.command_bot(f"!play {url}")
             self.current_track_title = f"Радио: {name}"
             StreamHandler.current_title = f"Радио: {name}"
@@ -292,6 +338,7 @@ class TS3Bridge:
         if cmd in ["lofi", "лофи"]:
             name, url = RADIO_STATIONS["1"]
             self.send_channel_msg(f"[b][color=#fbc531]📻 Запуск радио:[/color] {name}[/b]")
+            self.set_bot_avatar(f"http://127.0.0.1:{self.stream_port}/ym_logo.png")
             self.command_bot(f"!play {url}")
             self.current_track_title = f"Радио: {name}"
             StreamHandler.current_title = f"Радио: {name}"
@@ -313,7 +360,7 @@ class TS3Bridge:
                 return
 
             self.send_channel_msg(f"[i]🔎 Поиск в Яндекс.Музыке: {arg}...[/i]")
-            direct_link, title_or_err = self.resolve_yandex(arg)
+            direct_link, title_or_err, cover_url = self.resolve_yandex(arg)
             if not direct_link:
                 self.send_channel_msg(f"[color=red]❌ {title_or_err}[/color]")
                 return
@@ -321,7 +368,11 @@ class TS3Bridge:
             # Store in stream handler for 302 redirect
             StreamHandler.current_stream_url = direct_link
             StreamHandler.current_title = title_or_err
+            StreamHandler.current_cover_url = cover_url or ""
             self.current_track_title = title_or_err
+
+            # Set avatar to track cover (or Yandex Music logo fallback)
+            self.set_bot_avatar(cover_url)
 
             self.send_channel_msg(f"[b][color=#2ecc71]▶ Играет Яндекс.Музыка:[/color] {title_or_err}[/b]")
             stream_url = f"http://127.0.0.1:{self.stream_port}/stream/{int(time.time())}.mp3"
@@ -334,6 +385,7 @@ class TS3Bridge:
             StreamHandler.current_stream_url = ""
             StreamHandler.current_title = ""
             self.command_bot("!stop")
+            self.clear_bot_avatar()
             self.send_channel_msg("[b]⏹️ Воспроизведение остановлено.[/b]")
             return
 
@@ -350,6 +402,7 @@ class TS3Bridge:
             StreamHandler.current_title = ""
             self.command_bot("!clear")
             self.command_bot("!stop")
+            self.clear_bot_avatar()
             self.send_channel_msg("[b]🗑️ Очередь очищена, воспроизведение остановлено.[/b]")
             return
 
@@ -379,7 +432,7 @@ class TS3Bridge:
         buffer = ""
         while True:
             try:
-                time.sleep(0.2)
+                time.sleep(0.15)
                 chunk = self.tn.read_very_eager().decode('utf-8', errors='ignore')
                 if not chunk:
                     continue
