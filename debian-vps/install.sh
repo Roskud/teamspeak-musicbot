@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Скрипт автоматической установки Музыкального Бота TeamSpeak 6 на Debian / Ubuntu
+# Поддержка: Яндекс.Музыка, Радио (11 станций, Lo-Fi 24/7)
+# YouTube, SoundCloud и VK удалены/отключены
 # ==============================================================================
 set -e
 
@@ -13,7 +15,8 @@ NC='\033[0m'
 
 echo -e "${BLUE}================================================================${NC}"
 echo -e "${GREEN}  Установка легковесного Музыкального Бота для TeamSpeak 6      ${NC}"
-echo -e "${BLUE}  Поддержка: ВК Музыка, SoundCloud, YouTube, Радио (DFM, Record) ${NC}"
+echo -e "${BLUE}  Поддержка: Яндекс.Музыка, Радио (11 станций, Lo-Fi 24/7)       ${NC}"
+echo -e "${BLUE}  YouTube, SoundCloud и VK отключены                             ${NC}"
 echo -e "${BLUE}================================================================${NC}"
 
 # Проверка root прав
@@ -24,11 +27,10 @@ fi
 
 echo -e "${YELLOW}[1/6] Обновление пакетов и установка зависимостей...${NC}"
 apt-get update -y
-apt-get install -y ffmpeg libopus0 libasound2 curl tar bzip2 ca-certificates python3
+apt-get install -y ffmpeg libopus0 libasound2 curl tar bzip2 ca-certificates python3 python3-pip
 
-echo -e "${YELLOW}[2/6] Установка свежей версии yt-dlp (для ВК Музыки и YouTube)...${NC}"
-curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
-chmod a+rx /usr/local/bin/yt-dlp
+echo -e "${YELLOW}[2/6] Установка библиотеки yandex-music...${NC}"
+pip3 install --break-system-packages yandex-music || pip3 install yandex-music
 
 echo -e "${YELLOW}[3/6] Создание пользователя ts3bot и рабочей директории...${NC}"
 id -u ts3bot &>/dev/null || useradd -r -m -d /opt/ts3audiobot -s /bin/false ts3bot
@@ -41,12 +43,26 @@ tar -xzf /tmp/ts3audiobot.tar.gz -C /opt/ts3audiobot/
 rm -f /tmp/ts3audiobot.tar.gz
 chmod +x /opt/ts3audiobot/TS3AudioBot
 
-echo -e "${YELLOW}[5/6] Копирование конфигураций...${NC}"
+echo -e "${YELLOW}[5/6] Копирование конфигураций и модулей Яндекс.Музыки...${NC}"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 mkdir -p /opt/ts3audiobot/bots/default
 cp "$SCRIPT_DIR/config/ts3audiobot.toml" /opt/ts3audiobot/ts3audiobot.toml
 cp "$SCRIPT_DIR/config/rights.toml" /opt/ts3audiobot/rights.toml
 cp "$SCRIPT_DIR/config/bots/default/bot.toml" /opt/ts3audiobot/bots/default/bot.toml
+cp "$SCRIPT_DIR/config/disable_ytdl.sh" /opt/ts3audiobot/disable_ytdl.sh
+chmod +x /opt/ts3audiobot/disable_ytdl.sh
+cp "$SCRIPT_DIR/ym_bridge.py" /opt/ts3audiobot/ym_bridge.py
+
+# Создание стартового скрипта start.sh
+cat << 'EOF' > /opt/ts3audiobot/start.sh
+#!/usr/bin/env bash
+cd /opt/ts3audiobot
+python3 /opt/ts3audiobot/ym_bridge.py &
+BRIDGE_PID=$!
+trap "kill -TERM $BRIDGE_PID 2>/dev/null" EXIT
+exec /opt/ts3audiobot/TS3AudioBot --non-interactive
+EOF
+chmod +x /opt/ts3audiobot/start.sh
 
 # Запрос IP TeamSpeak сервера
 echo ""

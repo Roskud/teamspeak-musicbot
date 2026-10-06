@@ -118,7 +118,7 @@ prefer_resolver = "Youtubedl"
 youtube_api_key = ""
 
 [tools]
-youtube-dl = { path = "/usr/local/bin/yt-dlp" }
+youtube-dl = { path = "/opt/ts3audiobot/disable_ytdl.sh" }
 
 [tools.ffmpeg]
 path = "/usr/bin/ffmpeg"

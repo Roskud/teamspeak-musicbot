@@ -1,5 +1,5 @@
 [Unit]
-Description=TeamSpeak 6 MusicBot (TS3AudioBot)
+Description=TeamSpeak 6 MusicBot (TS3AudioBot with Yandex Music & Radio)
 After=network.target network-online.target
 Wants=network-online.target
 
@@ -8,7 +8,7 @@ Type=simple
 User=ts3bot
 Group=ts3bot
 WorkingDirectory=/opt/ts3audiobot
-ExecStart=/opt/ts3audiobot/TS3AudioBot --non-interactive
+ExecStart=/opt/ts3audiobot/start.sh
 Restart=always
 RestartSec=5
 
@@ -16,7 +16,7 @@ RestartSec=5
 ProtectSystem=full
 ProtectHome=true
 NoNewPrivileges=true
-MemoryMax=256M
+MemoryMax=384M
 CPUQuota=80%
 
 [Install]

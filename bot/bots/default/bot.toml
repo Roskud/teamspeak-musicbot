@@ -47,6 +47,11 @@ send_mode = "voice"
 matcher = "exact"
 
 [commands.alias]
+commands = "!print [b][color=#0984e3]🎵 КОМАНДЫ БОТА:[/color][/b]\n• [b]!play <песня/ссылка>[/b] — Яндекс.Музыка\n• [b]!radio 1..11[/b] — Радио\n• [b]!lofi[/b] — быстрый Lo-Fi\n• [b]!pause / !stop / !vol 0..100 / !song[/b]\n• [b]!radio[/b] — список всех радиостанций"
+help = "!print [b][color=#0984e3]🎵 КОМАНДЫ БОТА:[/color][/b]\n• [b]!play <песня/ссылка>[/b] — Яндекс.Музыка\n• [b]!radio 1..11[/b] — Радио\n• [b]!lofi[/b] — быстрый Lo-Fi\n• [b]!pause / !stop / !vol 0..100 / !song[/b]\n• [b]!radio[/b] — список всех радиостанций"
+команды = "!print [b][color=#0984e3]🎵 КОМАНДЫ БОТА:[/color][/b]\n• [b]!play <песня/ссылка>[/b] — Яндекс.Музыка\n• [b]!radio 1..11[/b] — Радио\n• [b]!lofi[/b] — быстрый Lo-Fi\n• [b]!pause / !stop / !vol 0..100 / !song[/b]\n• [b]!radio[/b] — список всех радиостанций"
+помощь = "!print [b][color=#0984e3]🎵 КОМАНДЫ БОТА:[/color][/b]\n• [b]!play <песня/ссылка>[/b] — Яндекс.Музыка\n• [b]!radio 1..11[/b] — Радио\n• [b]!lofi[/b] — быстрый Lo-Fi\n• [b]!pause / !stop / !vol 0..100 / !song[/b]\n• [b]!radio[/b] — список всех радиостанций"
+
 "radio 1" = "!play https://live.hunter.fm/lofi_high"
 "radio 2" = "!play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
 "radio 3" = "!play https://play.streamafrica.net/lofi-hip-hop"
@@ -58,7 +63,7 @@ matcher = "exact"
 "radio 9" = "!play http://pub0102.101.ru:8000/stream/air/aac/64/200"
 "radio 10" = "!play https://nashe1.hostingradio.ru/nashe-128.mp3"
 "radio 11" = "!play https://radio-holding.ru:9433/marusya_default"
-radio = "!print [b][color=#fbc531]📻 RADIO STATIONS:[/color][/b]\\n• [b]!radio 1[/b] - Hunter FM Lo-Fi Hip Hop\\n• [b]!radio 2[/b] - FluxFM Chillhop HQ\\n• [b]!radio 3[/b] - Lo-Fi Girl 24/7\\n• [b]!radio 4[/b] - Nightride Chillsynth\\n• [b]!radio 5[/b] - Radio Record (Dance)\\n• [b]!radio 6[/b] - DFM (Club/EDM)\\n• [b]!radio 7[/b] - Europa Plus (Hits)\\n• [b]!radio 8[/b] - Energy NRJ\\n• [b]!radio 9[/b] - Relax FM (Chillout)\\n• [b]!radio 10[/b] - Nashe Radio (Rock)\\n• [b]!radio 11[/b] - Marusya FM (Pop)\\n[i]To play type !radio <1..11> (e.g. !radio 1)[/i]"
+radio = "!print [b][color=#fbc531]📻 РАДИОСТАНЦИИ:[/color][/b]\\n• [b]!radio 1[/b] — Hunter FM Lo-Fi Hip Hop (24/7)\\n• [b]!radio 2[/b] — FluxFM Chillhop HQ\\n• [b]!radio 3[/b] — Lo-Fi Girl 24/7\\n• [b]!radio 4[/b] — Nightride Chillsynth\\n• [b]!radio 5[/b] — Radio Record (EDM)\\n• [b]!radio 6[/b] — DFM (Клуб)\\n• [b]!radio 7[/b] — Europa Plus (Хиты)\\n• [b]!radio 8[/b] — Energy NRJ (Поп)\\n• [b]!radio 9[/b] — Relax FM (Лаунж)\\n• [b]!radio 10[/b] — Наше Радио (Рок)\\n• [b]!radio 11[/b] — Маруся FM (Русские хиты)\\n[i]Включить: !radio <1..11> (например, !radio 1)[/i]"
 "radio lofi" = "!play https://live.hunter.fm/lofi_high"
 "radio chillhop" = "!play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
 "radio girl" = "!play https://play.streamafrica.net/lofi-hip-hop"
@@ -70,7 +75,19 @@ radio = "!print [b][color=#fbc531]📻 RADIO STATIONS:[/color][/b]\\n• [b]!rad
 "radio relax" = "!play http://pub0102.101.ru:8000/stream/air/aac/64/200"
 "radio nashe" = "!play https://nashe1.hostingradio.ru/nashe-128.mp3"
 "radio marusya" = "!play https://radio-holding.ru:9433/marusya_default"
-"radio list" = "!print [b][color=#fbc531]📻 RADIO STATIONS:[/color][/b]\n• [b]!radio 1[/b] - Hunter FM Lo-Fi Hip Hop\n• [b]!radio 2[/b] - FluxFM Chillhop HQ\n• [b]!radio 3[/b] - Lo-Fi Girl 24/7\n• [b]!radio 4[/b] - Nightride Chillsynth\n• [b]!radio 5[/b] - Radio Record (Dance)\n• [b]!radio 6[/b] - DFM (Club/EDM)\n• [b]!radio 7[/b] - Europa Plus (Hits)\n• [b]!radio 8[/b] - Energy NRJ\n• [b]!radio 9[/b] - Relax FM (Chillout)\n• [b]!radio 10[/b] - Nashe Radio (Rock)\n• [b]!radio 11[/b] - Marusya FM (Pop)\n[i]To play type !radio <1..11> (e.g. !radio 1)[/i]"
+"radio list" = "!print [b][color=#fbc531]📻 РАДИОСТАНЦИИ:[/color][/b]
+• [b]!radio 1[/b] — Hunter FM Lo-Fi Hip Hop (24/7)
+• [b]!radio 2[/b] — FluxFM Chillhop HQ
+• [b]!radio 3[/b] — Lo-Fi Girl 24/7
+• [b]!radio 4[/b] — Nightride Chillsynth
+• [b]!radio 5[/b] — Radio Record (EDM)
+• [b]!radio 6[/b] — DFM (Клуб)
+• [b]!radio 7[/b] — Europa Plus (Хиты)
+• [b]!radio 8[/b] — Energy NRJ (Поп)
+• [b]!radio 9[/b] — Relax FM (Лаунж)
+• [b]!radio 10[/b] — Наше Радио (Рок)
+• [b]!radio 11[/b] — Маруся FM (Русские хиты)
+[i]Включить: !radio <1..11> (например, !radio 1)[/i]"
 "r 1" = "!play https://live.hunter.fm/lofi_high"
 "r 2" = "!play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
 "r 3" = "!play https://play.streamafrica.net/lofi-hip-hop"
@@ -82,7 +99,19 @@ radio = "!print [b][color=#fbc531]📻 RADIO STATIONS:[/color][/b]\\n• [b]!rad
 "r 9" = "!play http://pub0102.101.ru:8000/stream/air/aac/64/200"
 "r 10" = "!play https://nashe1.hostingradio.ru/nashe-128.mp3"
 "r 11" = "!play https://radio-holding.ru:9433/marusya_default"
-stations = "!print [b][color=#fbc531]📻 RADIO STATIONS:[/color][/b]\n• [b]!radio 1[/b] - Hunter FM Lo-Fi Hip Hop\n• [b]!radio 2[/b] - FluxFM Chillhop HQ\n• [b]!radio 3[/b] - Lo-Fi Girl 24/7\n• [b]!radio 4[/b] - Nightride Chillsynth\n• [b]!radio 5[/b] - Radio Record (Dance)\n• [b]!radio 6[/b] - DFM (Club/EDM)\n• [b]!radio 7[/b] - Europa Plus (Hits)\n• [b]!radio 8[/b] - Energy NRJ\n• [b]!radio 9[/b] - Relax FM (Chillout)\n• [b]!radio 10[/b] - Nashe Radio (Rock)\n• [b]!radio 11[/b] - Marusya FM (Pop)\n[i]To play type !radio <1..11> (e.g. !radio 1)[/i]"
+stations = "!print [b][color=#fbc531]📻 РАДИОСТАНЦИИ:[/color][/b]
+• [b]!radio 1[/b] — Hunter FM Lo-Fi Hip Hop (24/7)
+• [b]!radio 2[/b] — FluxFM Chillhop HQ
+• [b]!radio 3[/b] — Lo-Fi Girl 24/7
+• [b]!radio 4[/b] — Nightride Chillsynth
+• [b]!radio 5[/b] — Radio Record (EDM)
+• [b]!radio 6[/b] — DFM (Клуб)
+• [b]!radio 7[/b] — Europa Plus (Хиты)
+• [b]!radio 8[/b] — Energy NRJ (Поп)
+• [b]!radio 9[/b] — Relax FM (Лаунж)
+• [b]!radio 10[/b] — Наше Радио (Рок)
+• [b]!radio 11[/b] — Маруся FM (Русские хиты)
+[i]Включить: !radio <1..11> (например, !radio 1)[/i]"
 lofi = "!play https://live.hunter.fm/lofi_high"
 chillhop = "!play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
 record = "!play https://hls-01-radiorecord.hostingradio.ru/record/playlist.m3u8"

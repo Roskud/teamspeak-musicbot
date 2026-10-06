@@ -1,171 +1,143 @@
-# 🎵 TeamSpeak 6 MusicBot (TS6 / TS3)
+# 🎵 TeamSpeak 6 MusicBot (Яндекс.Музыка & Радио)
 
-Легковесный, высокопроизводительный музыкальный бот для **TeamSpeak 6** и **TeamSpeak 3** с полной поддержкой российских и мировых музыкальных сервисов: **ВК Музыка**, **SoundCloud**, **YouTube**, **Интернет-радио** (Record, DFM, Europa Plus и др.).
+Легковесный, надежный музыкальный бот для **TeamSpeak 6** и **TeamSpeak 3** с полной поддержкой **Яндекс.Музыки** и проверенных **Интернет-радиостанций** (включая 24/7 Lo-Fi Hip Hop).
 
-Оптимизирован для работы на слабых **VPS / VDS серверах под управлением Linux Debian / Ubuntu** (потребляет всего **~50–70 МБ RAM**!).
+> 🚫 **Примечание:** Сервисы **YouTube**, **SoundCloud** и **ВК Музыка** полностью удалены и заблокированы. Бот работает исключительно с **Яндекс.Музыкой** и **Интернет-радио**.
+
+Оптимизирован для работы на слабых **VPS / VDS серверах под управлением Linux Debian / Ubuntu** (потребляет всего **~50–80 МБ RAM**), а также полностью настроен для локального запуска на **Windows**.
 
 ---
 
-## ✨ Основные особенности под TeamSpeak 6
+## ✨ Возможности и особенности
 
-* **🔥 Полная адаптация под интерфейс TeamSpeak 6**:
-  * **Динамические обложки треков**: бот автоматически скачивает обложку играющего трека (из ВК, SoundCloud, YouTube) и устанавливает её себе на аватарку в клиенте TeamSpeak 6!
-  * **Статус и описание клиента**: в списке пользователей и описании бота отображается название трека, автор и хронометраж.
-  * **Кристально чистый звук**: поддержка режима передачи **Opus Music Stereo** (до 96–128 kbps).
-* **🎧 Поддержка источников звука**:
-  * **ВК Музыка**: воспроизведение треков и альбомов по ссылкам ВКонтакте (`vk.com`).
-  * **SoundCloud**: треки, авторы и плейлисты.
-  * **YouTube / YouTube Music**: поиск и воспроизведение по ссылкам или ключевым словам.
-  * **Интернет-радиостанции**: встроенные пресеты популярных станций (Radio Record, DFM, Europa Plus, Energy, Relax FM, Retro FM, Studio 21, Lo-Fi и др.).
-* **⚡ Экстремально низкое потребление ресурсов**:
-  * Работает в фоне как консольная служба, не требует запущенного тяжелого графического клиента TeamSpeak, Wine или X11.
-  * Потребляет всего **~50–70 МБ оперативной памяти** и менее 1% CPU в простое.
-* **🌐 Встроенный Web-интерфейс**:
-  * Управление очередью, паузой, громкостью и поиском через браузер по адресу `http://ВАШ_IP:58913`.
-* **🇷🇺 Русские и английские команды**:
-  * Поддержка быстрых алиасов (`!п`, `!скип`, `!пауза`, `!стоп`, `!громкость`, `!record`, `!dfm` и др.).
+* **🎧 Яндекс.Музыка**:
+  * Поиск и воспроизведение любого трека по названию и артисту (например, `!play Король и Шут Лесник`).
+  * Воспроизведение треков по прямым ссылкам Яндекс.Музыки (`https://music.yandex.ru/album/.../track/...` или `.../track/...`).
+  * Автоматическое получение аудиопотока в высоком качестве (до 320 kbps MP3).
+* **📻 Интернет-радио (11 станций)**:
+  * Команда `!radio` выводит нумерованный список станций на русском языке.
+  * Станция **#1** — круглосуточный **Hunter FM Lo-Fi Hip Hop** (быстрый запуск по команде `!lofi`).
+  * Доступны 11 стабильных радиостанций разных жанров (Lo-Fi, Chillhop, EDM, Клубная, Поп, Рок).
+* **🇷🇺 Полная поддержка русского языка**:
+  * Все команды, справка (`!commands`, `!help`), подтверждения действий и сообщения об ошибках отображаются на русском языке.
+  * Описание канала TeamSpeak автоматически обновляется красивой памяткой со всеми командами.
+* **⚡ Поддержка команд через `!` и `/`**:
+  * Любая команда работает как через восклицательный знак (`!play`, `!radio`, `!stop`), так и через слэш (`/play`, `/radio`, `/stop`).
+* **🌐 Web-интерфейс**:
+  * Управление очередью, паузой, громкостью через браузер по адресу `http://localhost:58913` (или `http://IP_VPS:58913`).
+
+---
+
+## 💬 Команды бота (на русском языке)
+
+Все команды можно вводить как в чат канала, так и в личные сообщения боту.
+
+| Команда | Короткий алиас | Описание |
+|---|---|---|
+| `!play <название>` | `!p <название>` | Поиск трека в Яндекс.Музыке и воспроизведение (напр. `!play Король и Шут`) |
+| `!play <ссылка>` | `!p <ссылка>` | Воспроизведение трека по ссылке Яндекс.Музыки |
+| `!radio` | `!радио` | Вывести список всех 11 доступных радиостанций с номерами |
+| `!radio <1..11>` | `!r <1..11>` | Включить радиостанцию по номеру (напр. `!radio 1`) |
+| `!lofi` | `!лофи` | Быстрый запуск круглосуточного Lo-Fi Hip Hop (Станция #1) |
+| `!pause` | `!пауза` | Поставить на паузу / снять с паузы |
+| `!stop` | `!s`, `!стоп` | Полностью остановить музыку |
+| `!volume <0..100>` | `!vol <0..100>` | Изменить громкость воспроизведения (напр. `!vol 70`) |
+| `!song` | `!np`, `!трек` | Показать текущий играющий трек или радиостанцию |
+| `!clear` | `!очистить` | Очистить очередь и остановить плеер |
+| `!commands` | `!help`, `!помощь` | Вывести полную справку по всем командам |
+
+*(Любую команду можно писать со слэшем: `/play`, `/radio 1`, `/lofi`, `/stop`, `/commands`).*
+
+---
+
+## 📻 Список радиостанций (`!radio <номер>`)
+
+| Номер | Станция | Жанр и описание |
+|:---:|---|---|
+| **`!radio 1`** | **Hunter FM Lo-Fi Hip Hop** | Круглосуточный Lo-Fi для отдыха и учебы (24/7) |
+| **`!radio 2`** | **FluxFM Chillhop HQ** | Качественный берлинский Chillhop & Beats |
+| **`!radio 3`** | **Lo-Fi Girl 24/7** | Классический Lo-Fi Hip Hop |
+| **`!radio 4`** | **Nightride Chillsynth** | Синтвейв, ретровейв и чиллвейв |
+| **`!radio 5`** | **Radio Record** | Танцевальная музыка & EDM |
+| **`!radio 6`** | **DFM** | Клубная и танцевальная музыка |
+| **`!radio 7`** | **Europa Plus** | Мировые и российские топ-хиты |
+| **`!radio 8`** | **Energy NRJ** | Молодежные энергичные хиты |
+| **`!radio 9`** | **Relax FM** | Лаунж, эмбиент и чиллаут |
+| **`!radio 10`**| **Наше Радио** | Легендарный русский рок |
+| **`!radio 11`**| **Маруся FM** | Современные русские поп-хиты |
 
 ---
 
 ## 🚀 Быстрый запуск на Windows (Локально)
 
-В репозиторий уже включен локальный сервер TeamSpeak и все необходимые утилиты (`ffmpeg`, `yt-dlp`).
-
-1. **Запуск сервера и бота одновременно**:
+1. **Запуск сервера и бота одной кнопкой**:
    * Дважды кликните по файлу `start_all.bat`.
-   * Сервер запустится на `localhost:9987`.
-   * Бот автоматически подключится к серверу.
-2. **Подключение через TeamSpeak 6**:
-   * Откройте TeamSpeak 6 и подключитесь к адресу: `localhost` (порт `9987`).
-   * При первом подключении введите ключ администратора из файла `server/credentials.txt`:
+   * Сервер TeamSpeak запустится на `localhost:9987`.
+   * Бот `🎵 MusicBot` и шлюз Яндекс.Музыки автоматически подключатся к серверу.
+2. **Подключение через TeamSpeak 6 / 3**:
+   * Подключитесь к адресу: `localhost` (порт `9987`).
+   * Ключ администратора сервера сохранен в `server/credentials.txt`:
      ```text
      token = 3JPvRvGRC+gQco9VylyZ8qAUL4t2JKFyvitqDlZM
      ```
-3. **Управление ботом**:
-   * Напишите в чат канала: `!record` или `!п https://soundcloud.com/...`
+3. **Управление в чате канала**:
+   * Напишите `!radio` — появится список радиостанций.
+   * Напишите `!radio 1` или `!lofi` — заиграет Lo-Fi Hip Hop.
+   * Напишите `!play Король и Шут Лесник` — включится песня из Яндекс.Музыки.
 
 ---
 
 ## 🐧 Установка на Linux Debian / Ubuntu (VPS)
 
-Для развертывания бота на VPS сервере подготовлен скрипт автоустановки в 1 команду.
-
-### Способ 1: Автоматическая установка через Systemd (Рекомендуется)
-
-1. Склонируйте репозиторий на ваш VPS:
+1. Склонируйте репозиторий на ваш сервер:
    ```bash
    git clone https://github.com/Roskud/teamspeak-musicbot.git
    cd teamspeak-musicbot/debian-vps
    ```
 
-2. Сделайте скрипт исполняемым и запустите установку:
+2. Запустите автоматическую установку от root:
    ```bash
    chmod +x install.sh
    sudo ./install.sh
    ```
 
-3. Скрипт автоматически:
-   * Установит все необходимые пакеты (`ffmpeg`, `libopus`, `curl`, `yt-dlp`).
-   * Скачает и настроит бота в директорию `/opt/ts3audiobot`.
-   * Запросит IP вашего TeamSpeak сервера (по умолчанию `127.0.0.1`).
-   * Создаст и запустит фоновую службу `systemd` с автозапуском при перезагрузке сервера.
+3. Скрипт установит:
+   * Необходимые системные пакеты (`ffmpeg`, `python3`, `yandex-music`).
+   * Бот TS3AudioBot в директорию `/opt/ts3audiobot`.
+   * Шлюз `ym_bridge.py` и заглушку `disable_ytdl.sh` для блокировки YouTube.
+   * Службу `systemd` (`ts3audiobot.service`) с автозапуском.
 
-#### Управление службой на VPS:
+#### Управление службой на сервере:
 ```bash
-# Статус бота
-systemctl status ts3audiobot
-
-# Просмотр логов в реальном времени
-journalctl -u ts3audiobot -f
-
-# Перезапуск / Остановка / Запуск
-sudo systemctl restart ts3audiobot
-sudo systemctl stop ts3audiobot
-sudo systemctl start ts3audiobot
+sudo systemctl status ts3audiobot     # Проверить статус
+sudo journalctl -u ts3audiobot -f     # Смотреть логи
+sudo systemctl restart ts3audiobot    # Перезапуск
+sudo systemctl stop ts3audiobot       # Остановка
 ```
 
 ---
 
-### Способ 2: Запуск через Docker Compose
-
-Если вы предпочитаете контейнеры:
-```bash
-cd debian-vps
-docker compose up -d
-```
-
-## 📻 Radio Stations (`!radio <number>` or `!r <number>`)
-
-You can play any radio station by typing `!radio <number>` or `!r <number>`:
-
-| Command | Radio Station | Genre / Description |
-|---|---|---|
-| **`!radio 1`** | Hunter FM Lo-Fi | 24/7 Lo-Fi Hip Hop Chill Beats |
-| **`!radio 2`** | FluxFM Chillhop HQ | Lo-Fi & Chillhop 320kbps |
-| **`!radio 3`** | Lo-Fi Girl 24/7 | Study, Relax, Sleep |
-| **`!radio 4`** | Nightride Chillsynth | Chillwave & Synth Beats |
-| **`!radio 5`** | Radio Record | Dance & EDM Hits |
-| **`!radio 6`** | DFM | Club & Dance Hits |
-| **`!radio 7`** | Europa Plus | Global & Russian Top Hits |
-| **`!radio 8`** | Radio Energy (NRJ) | Youth Energy & Dance Charts |
-| **`!radio 9`** | Relax FM | Lounge, Ambient & Chillout |
-| **`!radio 10`**| Nashe Radio | Russian Rock |
-| **`!radio 11`**| Marusya FM | Russian Pop Music |
-
-*(You can also use direct names: `!lofi`, `!chillhop`, `!record`, `!dfm`, `!europa`, `!energy`, `!relax`, `!nashe`, `!marusya`).*
-
----
-
-## 💬 All Bot Commands (English)
-
-| Command | Short Alias | Description |
-|---|---|---|
-| `!play <url / title>` | `!p <...>` | Play audio from VK, SoundCloud, YouTube or URL |
-| `!add <url>` | — | Add song to queue without interrupting current song |
-| `!pause` | — | Pause / Resume playback |
-| `!skip` | `!next`, `!n` | Skip to next song in queue |
-| `!stop` | `!s` | Stop music and clear active playback |
-| `!volume <0-100>` | `!vol <...>` | Change volume level (e.g. `!volume 50`) |
-| `!queue` | `!q`, `!list` | Show current queue list |
-| `!song` | `!np` | Show current song title and artist |
-| `!clear` | — | Clear playlist queue |
-| `!repeat on / off` | — | Loop current track |
-| `!radio <1..11>` | `!r <1..11>` | Play radio by station number |
-
-
----
-
-## 🔑 Авторизация в ВК Музыке (Опционально)
-
-Если вам необходимо воспроизводить приватные аудиозаписи или закрытые плейлисты ВК:
-1. Установите расширение для браузера для экспорта cookies (например, `Get cookies.txt LOCALLY`).
-2. Экспортируйте cookies с сайта `vk.com` в файл `cookies.txt`.
-3. Поместите файл `cookies.txt` в папку с ботом и настройте аргументы yt-dlp:
-   ```toml
-   [tools]
-   youtube-dl = { path = "yt-dlp", arguments = "--cookies cookies.txt" }
-   ```
-
----
-
-## 📂 Структура репозитория
+## 📂 Структура проекта
 
 ```
-├── bot/                     # Готовая сборка бота для Windows (TS3AudioBot.exe, yt-dlp, ffmpeg)
-├── server/                  # Локальный TeamSpeak 3/6 сервер для Windows
-├── debian-vps/              # Установочный пакет для Linux Debian VPS
-│   ├── install.sh           # 1-Click скрипт автоустановки на Debian/Ubuntu
-│   ├── ts3audiobot.service  # Systemd служба для автозапуска
-│   ├── docker-compose.yml   # Запуск через Docker
-│   └── config/              # Оптимизированные конфиги для Linux
-├── start_all.bat            # Быстрый запуск сервера и бота на Windows
-├── start_bot.bat            # Запуск бота на Windows
-├── start_server.bat         # Запуск сервера на Windows
+├── bot/                     # Модули бота для Windows
+│   ├── TS3AudioBot.exe      # Ядро аудиобота
+│   ├── ym_bridge.py         # Шлюз Яндекс.Музыки, радио и команд
+│   ├── disable_ytdl.bat     # Блокировка YouTube и SoundCloud
+│   └── ffmpeg.exe           # Аудио-декодер
+├── server/                  # Сервер TeamSpeak 3/6 для Windows
+├── debian-vps/              # Пакет установки для Linux Debian/Ubuntu VPS
+│   ├── install.sh           # Скрипт автоустановки на VPS в 1 клик
+│   ├── ts3audiobot.service  # Systemd служба для VPS
+│   ├── ym_bridge.py         # Шлюз для Linux
+│   └── config/              # Конфигурационные файлы
+├── start_all.bat            # Запуск сервера и бота на Windows
+├── start_bot.bat            # Запуск только бота на Windows
+├── start_server.bat         # Запуск только сервера на Windows
 └── README.md                # Документация проекта
 ```
 
 ---
 
 ## 📜 Лицензия
-Проект распространяется под лицензией [GPL-3.0](LICENSE).
-Основано на открытых компонентах TS3AudioBot и yt-dlp.
+GPL-3.0.

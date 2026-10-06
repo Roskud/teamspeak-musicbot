@@ -1,14 +1,22 @@
 # Rights declaration file
+# For more information about syntax and structure see here:
+# https://github.com/Splamy/TS3AudioBot/wiki/Rights
+
 "+" = [
+	# Basic stuff
 	"cmd.help.*",
 	"cmd.pm",
 	"cmd.subscribe",
 	"cmd.unsubscribe",
 	"cmd.kickme.*",
 	"cmd.version",
+	
+	# Getting song info
 	"cmd.song",
 	"cmd.repeat",
 	"cmd.random",
+
+	# Conditionals and basic scripting
 	"cmd.if",
 	"cmd.print",
 	"cmd.rng",
@@ -21,15 +29,16 @@
 	"cmd.rights.can",
 ]
 
-# Admin rule
+# Admin rule (localhost and ServerAdmin group)
 [[rule]]
 	groupid = [ 6 ]
 	ip = [ "127.0.0.1", "::1" ]
 	"+" = "*"
 
-# Rights for all users
+# Playing rights for all server users
 [[rule]]
 	"+" = [
+		# Play controls
 		"cmd.play",
 		"cmd.pause",
 		"cmd.stop",
@@ -37,11 +46,18 @@
 		"cmd.volume",
 		"cmd.next",
 		"cmd.previous",
+
+		# Search features
+		"cmd.search.*",
+
+		# Playlist management
 		"cmd.list.*",
 		"cmd.add",
 		"cmd.clear",
 		"cmd.random.*",
 		"cmd.repeat.*",
+
+		# History features
 		"cmd.history.*",
 		"cmd.alias.*"
 	]

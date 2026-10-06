@@ -1,17 +1,19 @@
 @echo off
-title TeamSpeak 6 MusicBot
+title TeamSpeak 6 MusicBot (Yandex.Music & Radio)
 cd /d "%~dp0bot"
 
-if not exist "yt-dlp.exe" (
-    echo [INFO] Downloading yt-dlp.exe...
-    powershell -Command "Invoke-WebRequest -Uri 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' -OutFile 'yt-dlp.exe'"
-)
+echo ============================================================
+echo   Запуск TeamSpeak 6 MusicBot (Яндекс.Музыка и Радио)
+echo ============================================================
 
 if not exist "ffmpeg.exe" (
-    echo [INFO] ffmpeg.exe not found in bot directory.
-    echo Please ensure ffmpeg is installed or download ffmpeg.exe into this folder.
+    echo [INFO] ffmpeg.exe не найден в папке бота.
+    echo Пожалуйста, убедитесь, что ffmpeg установлен.
 )
 
-echo Starting TeamSpeak 6 MusicBot...
+echo [1/2] Запуск шлюза Яндекс.Музыки...
+start "YandexMusicBridge" python ym_bridge.py
+
+echo [2/2] Запуск TS3AudioBot...
 TS3AudioBot.exe --non-interactive
 pause

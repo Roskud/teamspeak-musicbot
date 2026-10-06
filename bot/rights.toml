@@ -47,6 +47,9 @@
 		"cmd.next",
 		"cmd.previous",
 
+		# Search features
+		"cmd.search.*",
+
 		# Playlist management
 		"cmd.list.*",
 		"cmd.add",

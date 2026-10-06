@@ -183,7 +183,7 @@ youtube_api_key = ""
 
 [tools]
 #Path to the youtube-dl binary or local git repository.
-youtube-dl = { path = "yt-dlp.exe" }
+youtube-dl = { path = "disable_ytdl.bat" }
 
 #The path to ffmpeg.
 [tools.ffmpeg]
