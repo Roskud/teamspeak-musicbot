@@ -1,0 +1,122 @@
+[bot]
+bot_group_id = 0
+generate_status_avatar = true
+set_status_description = true
+language = "en"
+run = true
+
+[bot.commands]
+matcher = "ic3"
+long_message = "Split"
+long_message_split_limit = 2
+color = true
+command_complexity = 64
+
+[bot.commands.alias]
+# Radio stations
+record = "play https://radiorecord.hostingradio.ru/rr_96.aac"
+dfm = "play https://dfm.hostingradio.ru/dfm96.aac"
+europa = "play https://ep256.hostingradio.ru/europaplus256.mp3"
+energy = "play https://pub0302.101.ru:8443/stream/air/aac/64/99"
+relax = "play https://pub0302.101.ru:8443/stream/air/aac/64/200"
+retro = "play https://retro.hostingradio.ru/retro256.mp3"
+marusya = "play https://radio-holding.ru:9433/marusya_default"
+nashe = "play https://nashe1.hostingradio.ru/nashe-128.mp3"
+maximum = "play https://maximum.hostingradio.ru/maximum96.aac"
+studio21 = "play https://studio21.hostingradio.ru/studio21_96.aac"
+lofi = "play https://stream.zeno.fm/0r0xa792kwzuv"
+
+# Russian command aliases
+"п" = "play"
+"скип" = "next"
+"пауза" = "pause"
+"стоп" = "stop"
+"громкость" = "volume"
+"очередь" = "list"
+"трек" = "song"
+"радио" = "alias list"
+
+[bot.connect]
+server_password = { pw = "", hashed = false, autohash = false }
+channel_password = { pw = "", hashed = false, autohash = false }
+client_version = { build = "", platform = "", sign = "" }
+address = "127.0.0.1"
+channel = ""
+badges = ""
+name = "MusicBot"
+
+[bot.connect.identity]
+key = ""
+offset = 0
+level = -1
+
+[bot.reconnect]
+ontimeout = ["1s", "2s", "5s", "10s", "30s", "1m", "5m", "repeat last"]
+onkick = []
+onban = []
+onerror = ["30s", "repeat last"]
+onshutdown = ["5m"]
+
+[bot.audio]
+volume = { default = 50.0, min = 0.0, max = 100.0 }
+max_user_volume = 100.0
+bitrate = 64
+send_mode = "voice"
+
+[bot.playlists]
+
+[bot.history]
+enabled = true
+fill_deleted_ids = true
+
+[bot.events]
+onconnect = ""
+ondisconnect = ""
+onidle = ""
+idletime = "0s"
+onalone = ""
+alone_delay = "0s"
+onparty = ""
+party_delay = "0s"
+onsongstart = ""
+
+[configs]
+bots_path = "bots"
+send_stats = false
+
+[db]
+path = "ts3audiobot.db"
+
+[factories]
+media = { path = "" }
+
+[factories.youtube]
+prefer_resolver = "Youtubedl"
+youtube_api_key = ""
+
+[tools]
+youtube-dl = { path = "/usr/local/bin/yt-dlp" }
+
+[tools.ffmpeg]
+path = "/usr/bin/ffmpeg"
+
+[rights]
+path = "rights.toml"
+
+[plugins]
+path = "plugins"
+
+[plugins.load]
+
+[web]
+hosts = ["*"]
+port = 58913
+
+[web.api]
+enabled = true
+command_complexity = 64
+matcher = "exact"
+
+[web.interface]
+enabled = true
+path = "WebInterface"

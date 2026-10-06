@@ -1,0 +1,47 @@
+# Rights declaration file
+"+" = [
+	"cmd.help.*",
+	"cmd.pm",
+	"cmd.subscribe",
+	"cmd.unsubscribe",
+	"cmd.kickme.*",
+	"cmd.version",
+	"cmd.song",
+	"cmd.repeat",
+	"cmd.random",
+	"cmd.if",
+	"cmd.print",
+	"cmd.rng",
+	"cmd.eval",
+	"cmd.take",
+	"cmd.xecute",
+	"cmd.getmy.*",
+	"cmd.json.*",
+	"cmd.bot.use",
+	"cmd.rights.can",
+]
+
+# Admin rule
+[[rule]]
+	groupid = [ 6 ]
+	ip = [ "127.0.0.1", "::1" ]
+	"+" = "*"
+
+# Rights for all users
+[[rule]]
+	"+" = [
+		"cmd.play",
+		"cmd.pause",
+		"cmd.stop",
+		"cmd.seek",
+		"cmd.volume",
+		"cmd.next",
+		"cmd.previous",
+		"cmd.list.*",
+		"cmd.add",
+		"cmd.clear",
+		"cmd.random.*",
+		"cmd.repeat.*",
+		"cmd.history.*",
+		"cmd.alias.*"
+	]

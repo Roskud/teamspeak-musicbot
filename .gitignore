@@ -1,0 +1,16 @@
+# Large binaries (exceeds GitHub 100MB limit)
+bot/ffmpeg.exe
+bot/ffprobe.exe
+
+# Database & Runtime logs
+bot/*.db
+bot/*.db-journal
+bot/logs/
+server/logs/
+server/ts3server.sqlitedb*
+server/*.log
+
+# Temporary & cache files
+*.tmp
+*.bak
+.system_generated/

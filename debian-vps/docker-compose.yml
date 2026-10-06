@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  ts3audiobot:
+    image: splamy/ts3audiobot:0.12.0
+    container_name: ts3audiobot
+    restart: unless-stopped
+    volumes:
+      - ./config/ts3audiobot.toml:/app/ts3audiobot.toml
+      - ./config/rights.toml:/app/rights.toml
+      - ./config/bots:/app/bots
+      - bot-data:/app/data
+    ports:
+      - "58913:58913"
+    environment:
+      - TZ=Europe/Moscow
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+volumes:
+  bot-data:

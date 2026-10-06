@@ -1,0 +1,17 @@
+run = true
+
+[connect]
+# Укажите IP адрес вашего TeamSpeak сервера (например, "127.0.0.1" или "ts.myserver.ru")
+address = "127.0.0.1"
+name = "🎵 MusicBot (VK | SC | Radio)"
+
+[connect.identity]
+key = ""
+offset = 0
+level = -1
+
+[audio]
+volume = { default = 50.0, min = 0.0, max = 100.0 }
+max_user_volume = 100.0
+bitrate = 64
+send_mode = "voice"
