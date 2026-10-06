@@ -94,40 +94,44 @@ cd debian-vps
 docker compose up -d
 ```
 
----
+## 📻 Radio Stations (`!radio <number>` or `!r <number>`)
 
-## 📻 Быстрые команды радио
+You can play any radio station by typing `!radio <number>` or `!r <number>`:
 
-Вы можете включать радиостанции одной короткой командой в чате:
-
-| Команда | Радиостанция |
-|---|---|
-| `!record` | Radio Record |
-| `!dfm` | DFM |
-| `!europa` | Europa Plus |
-| `!energy` | Radio Energy (NRJ) |
-| `!relax` | Relax FM |
-| `!retro` | Ретро FM |
-| `!marusya` | Маруся FM |
-| `!nashe` | Наше Радио |
-| `!maximum` | Радио MAXIMUM |
-| `!studio21`| Studio 21 |
-| `!lofi` | Lo-Fi 24/7 Chill Stream |
-
----
-
-## 💬 Основные команды управления
-
-| Русская команда | Английская команда | Описание |
+| Command | Radio Station | Genre / Description |
 |---|---|---|
-| `!п <ссылка / название>` | `!play <url / query>` | Воспроизвести трек (ВК, SoundCloud, YouTube) |
-| `!пауза` | `!pause` | Поставить трек на паузу |
-| `!скип` | `!next` | Переключить на следующий трек в очереди |
-| `!стоп` | `!stop` | Остановить воспроизведение |
-| `!громкость <0-100>` | `!volume <0-100>` | Изменить громкость бота |
-| `!очередь` | `!list` | Показать список треков в очереди |
-| `!трек` | `!song` | Информация о текущем треке |
-| `!радио` | `!alias list` | Показать доступные радиостанции |
+| **`!radio 1`** | Hunter FM Lo-Fi | 24/7 Lo-Fi Hip Hop Chill Beats |
+| **`!radio 2`** | FluxFM Chillhop HQ | Lo-Fi & Chillhop 320kbps |
+| **`!radio 3`** | Lo-Fi Girl 24/7 | Study, Relax, Sleep |
+| **`!radio 4`** | Nightride Chillsynth | Chillwave & Synth Beats |
+| **`!radio 5`** | Radio Record | Dance & EDM Hits |
+| **`!radio 6`** | DFM | Club & Dance Hits |
+| **`!radio 7`** | Europa Plus | Global & Russian Top Hits |
+| **`!radio 8`** | Radio Energy (NRJ) | Youth Energy & Dance Charts |
+| **`!radio 9`** | Relax FM | Lounge, Ambient & Chillout |
+| **`!radio 10`**| Nashe Radio | Russian Rock |
+| **`!radio 11`**| Marusya FM | Russian Pop Music |
+
+*(You can also use direct names: `!lofi`, `!chillhop`, `!record`, `!dfm`, `!europa`, `!energy`, `!relax`, `!nashe`, `!marusya`).*
+
+---
+
+## 💬 All Bot Commands (English)
+
+| Command | Short Alias | Description |
+|---|---|---|
+| `!play <url / title>` | `!p <...>` | Play audio from VK, SoundCloud, YouTube or URL |
+| `!add <url>` | — | Add song to queue without interrupting current song |
+| `!pause` | — | Pause / Resume playback |
+| `!skip` | `!next`, `!n` | Skip to next song in queue |
+| `!stop` | `!s` | Stop music and clear active playback |
+| `!volume <0-100>` | `!vol <...>` | Change volume level (e.g. `!volume 50`) |
+| `!queue` | `!q`, `!list` | Show current queue list |
+| `!song` | `!np` | Show current song title and artist |
+| `!clear` | — | Clear playlist queue |
+| `!repeat on / off` | — | Loop current track |
+| `!radio <1..11>` | `!r <1..11>` | Play radio by station number |
+
 
 ---
 

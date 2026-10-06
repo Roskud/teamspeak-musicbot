@@ -34,25 +34,45 @@ color = true
 command_complexity = 64
 
 [bot.commands.alias]
-record = "play https://radiorecord.hostingradio.ru/rr_96.aac"
-dfm = "play https://dfm.hostingradio.ru/dfm96.aac"
-europa = "play https://ep256.hostingradio.ru/europaplus256.mp3"
-energy = "play https://pub0302.101.ru:8443/stream/air/aac/64/99"
-relax = "play https://pub0302.101.ru:8443/stream/air/aac/64/200"
-retro = "play https://retro.hostingradio.ru/retro256.mp3"
-marusya = "play https://radio-holding.ru:9433/marusya_default"
+"radio 1" = "play https://live.hunter.fm/lofi_high"
+"radio 2" = "play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
+"radio 3" = "play https://play.streamafrica.net/lofi-hip-hop"
+"radio 4" = "play https://stream.nightride.fm/chillsynth.mp3"
+"radio 5" = "play https://hls-01-radiorecord.hostingradio.ru/record/playlist.m3u8"
+"radio 6" = "play http://dfm.hostingradio.ru/dfm128.mp3"
+"radio 7" = "play http://ep128.hostingradio.ru:8030/ep128"
+"radio 8" = "play http://pub0102.101.ru:8000/stream/air/aac/64/99"
+"radio 9" = "play http://pub0102.101.ru:8000/stream/air/aac/64/200"
+"radio 10" = "play https://nashe1.hostingradio.ru/nashe-128.mp3"
+"radio 11" = "play https://radio-holding.ru:9433/marusya_default"
+"r 1" = "play https://live.hunter.fm/lofi_high"
+"r 2" = "play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
+"r 3" = "play https://play.streamafrica.net/lofi-hip-hop"
+"r 4" = "play https://stream.nightride.fm/chillsynth.mp3"
+"r 5" = "play https://hls-01-radiorecord.hostingradio.ru/record/playlist.m3u8"
+"r 6" = "play http://dfm.hostingradio.ru/dfm128.mp3"
+"r 7" = "play http://ep128.hostingradio.ru:8030/ep128"
+"r 8" = "play http://pub0102.101.ru:8000/stream/air/aac/64/99"
+"r 9" = "play http://pub0102.101.ru:8000/stream/air/aac/64/200"
+"r 10" = "play https://nashe1.hostingradio.ru/nashe-128.mp3"
+"r 11" = "play https://radio-holding.ru:9433/marusya_default"
+lofi = "play https://live.hunter.fm/lofi_high"
+chillhop = "play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
+record = "play https://hls-01-radiorecord.hostingradio.ru/record/playlist.m3u8"
+dfm = "play http://dfm.hostingradio.ru/dfm128.mp3"
+europa = "play http://ep128.hostingradio.ru:8030/ep128"
+energy = "play http://pub0102.101.ru:8000/stream/air/aac/64/99"
+relax = "play http://pub0102.101.ru:8000/stream/air/aac/64/200"
 nashe = "play https://nashe1.hostingradio.ru/nashe-128.mp3"
-maximum = "play https://maximum.hostingradio.ru/maximum96.aac"
-studio21 = "play https://studio21.hostingradio.ru/studio21_96.aac"
-lofi = "play https://stream.zeno.fm/0r0xa792kwzuv"
-"п" = "play"
-"скип" = "next"
-"пауза" = "pause"
-"стоп" = "stop"
-"громкость" = "volume"
-"очередь" = "list"
-"трек" = "song"
-"радио" = "alias list"
+marusya = "play https://radio-holding.ru:9433/marusya_default"
+p = "play"
+s = "stop"
+n = "next"
+skip = "next"
+q = "list"
+queue = "list"
+vol = "volume"
+np = "song"
 
 [bot.connect]
 #The server password. Leave empty for none.
@@ -82,7 +102,7 @@ level = -1
 
 [bot.reconnect]
 ontimeout = ["1s", "2s", "5s", "10s", "30s", "1m", "5m", "repeat last"]
-onkick = []
+onkick = ["3s", "repeat last"]
 onban = []
 onerror = ["30s", "repeat last"]
 onshutdown = ["5m"]
