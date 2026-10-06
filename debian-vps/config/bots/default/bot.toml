@@ -1,25 +1,52 @@
+#Starts the instance when the TS3AudioBot is launched.
 run = true
 
 [connect]
+#The address, ip or nickname (and port; default: 9987) of the TeamSpeak3 server
 address = "127.0.0.1"
+#Client nickname when connecting.
 name = "🎵 MusicBot"
+#The server password. Leave empty for none.
+server_password = {  }
+#The default channel password. Leave empty for none.
+channel_password = {  }
+#Overrides the displayed version for the ts3 client. Leave empty for default.
+client_version = {  }
 
 [connect.identity]
-key = ""
-offset = 0
+#||| DO NOT MAKE THIS KEY PUBLIC ||| The client identity. You can import a teamspeak3 identity here too.
+key = "MCkDAgbAAgEgAiBWOl9niLYpR1+xj7+OT9bB2ue41YifsLOgZTh3rWwLWQ=="
+#The client identity offset determining the security level.
+offset = 99
+#The client identity security level which should be calculated before connecting
+#or -1 to generate on demand when connecting.
 level = -1
 
 [audio]
+#When a new song starts the volume will be trimmed to between min and max.
+#When the current volume already is between min and max nothing will happen.
+#To completely or partially disable this feature, set min to 0 and/or max to 100.
 volume = { default = 50.0, min = 0.0, max = 100.0 }
+#The maximum volume a normal user can request. Only user with the 'ts3ab.admin.volume' permission can request higher volumes.
 max_user_volume = 100.0
+#Specifies the bitrate (in kbps) for sending audio.
+#Values between 8 and 98 are supported, more or less can work but without guarantees.
+#Reference values: 16 - very poor (~3KiB/s), 24 - poor (~4KiB/s), 32 - okay (~5KiB/s), 48 - good (~7KiB/s), 64 - very good (~9KiB/s), 96 - deluxe (~13KiB/s)
 bitrate = 64
+#How the bot should play music. Options are:
+# - whisper : Whispers to the channel where the request came from. Other users can join with '!subscribe'.
+# - voice : Sends via normal voice to the current channel. '!subscribe' will not work in this mode.
+# - !... : A custom command. Use '!xecute (!a) (!b)' for example to execute multiple commands.
 send_mode = "voice"
 
 [commands]
+#Defines how the bot tries to match your !commands. Possible types:
+# - exact : Only when the command matches exactly.
+# - substring : The shortest command starting with the given prefix.
+# - ic3 : 'interleaved continuous character chain' A fuzzy algorithm similar to hamming distance but preferring characters at the start.
 matcher = "exact"
 
 [commands.alias]
-# Subcommands for !radio <1..11>
 "radio 1" = "!play https://live.hunter.fm/lofi_high"
 "radio 2" = "!play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
 "radio 3" = "!play https://play.streamafrica.net/lofi-hip-hop"
@@ -31,8 +58,7 @@ matcher = "exact"
 "radio 9" = "!play http://pub0102.101.ru:8000/stream/air/aac/64/200"
 "radio 10" = "!play https://nashe1.hostingradio.ru/nashe-128.mp3"
 "radio 11" = "!play https://radio-holding.ru:9433/marusya_default"
-
-# Subcommands for !radio by genre/name
+radio = "!print [b][color=#fbc531]📻 RADIO STATIONS:[/color][/b]\\n• [b]!radio 1[/b] - Hunter FM Lo-Fi Hip Hop\\n• [b]!radio 2[/b] - FluxFM Chillhop HQ\\n• [b]!radio 3[/b] - Lo-Fi Girl 24/7\\n• [b]!radio 4[/b] - Nightride Chillsynth\\n• [b]!radio 5[/b] - Radio Record (Dance)\\n• [b]!radio 6[/b] - DFM (Club/EDM)\\n• [b]!radio 7[/b] - Europa Plus (Hits)\\n• [b]!radio 8[/b] - Energy NRJ\\n• [b]!radio 9[/b] - Relax FM (Chillout)\\n• [b]!radio 10[/b] - Nashe Radio (Rock)\\n• [b]!radio 11[/b] - Marusya FM (Pop)\\n[i]To play type !radio <1..11> (e.g. !radio 1)[/i]"
 "radio lofi" = "!play https://live.hunter.fm/lofi_high"
 "radio chillhop" = "!play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
 "radio girl" = "!play https://play.streamafrica.net/lofi-hip-hop"
@@ -44,11 +70,7 @@ matcher = "exact"
 "radio relax" = "!play http://pub0102.101.ru:8000/stream/air/aac/64/200"
 "radio nashe" = "!play https://nashe1.hostingradio.ru/nashe-128.mp3"
 "radio marusya" = "!play https://radio-holding.ru:9433/marusya_default"
-
-# Full list via !radio list
 "radio list" = "!print [b][color=#fbc531]📻 RADIO STATIONS:[/color][/b]\n• [b]!radio 1[/b] - Hunter FM Lo-Fi Hip Hop\n• [b]!radio 2[/b] - FluxFM Chillhop HQ\n• [b]!radio 3[/b] - Lo-Fi Girl 24/7\n• [b]!radio 4[/b] - Nightride Chillsynth\n• [b]!radio 5[/b] - Radio Record (Dance)\n• [b]!radio 6[/b] - DFM (Club/EDM)\n• [b]!radio 7[/b] - Europa Plus (Hits)\n• [b]!radio 8[/b] - Energy NRJ\n• [b]!radio 9[/b] - Relax FM (Chillout)\n• [b]!radio 10[/b] - Nashe Radio (Rock)\n• [b]!radio 11[/b] - Marusya FM (Pop)\n[i]To play type !radio <1..11> (e.g. !radio 1)[/i]"
-
-# Also short aliases: !r 1, !r 2 ...
 "r 1" = "!play https://live.hunter.fm/lofi_high"
 "r 2" = "!play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
 "r 3" = "!play https://play.streamafrica.net/lofi-hip-hop"
@@ -60,11 +82,7 @@ matcher = "exact"
 "r 9" = "!play http://pub0102.101.ru:8000/stream/air/aac/64/200"
 "r 10" = "!play https://nashe1.hostingradio.ru/nashe-128.mp3"
 "r 11" = "!play https://radio-holding.ru:9433/marusya_default"
-
-# Dedicated alias !stations to show the full list
 stations = "!print [b][color=#fbc531]📻 RADIO STATIONS:[/color][/b]\n• [b]!radio 1[/b] - Hunter FM Lo-Fi Hip Hop\n• [b]!radio 2[/b] - FluxFM Chillhop HQ\n• [b]!radio 3[/b] - Lo-Fi Girl 24/7\n• [b]!radio 4[/b] - Nightride Chillsynth\n• [b]!radio 5[/b] - Radio Record (Dance)\n• [b]!radio 6[/b] - DFM (Club/EDM)\n• [b]!radio 7[/b] - Europa Plus (Hits)\n• [b]!radio 8[/b] - Energy NRJ\n• [b]!radio 9[/b] - Relax FM (Chillout)\n• [b]!radio 10[/b] - Nashe Radio (Rock)\n• [b]!radio 11[/b] - Marusya FM (Pop)\n[i]To play type !radio <1..11> (e.g. !radio 1)[/i]"
-
-# Direct station aliases
 lofi = "!play https://live.hunter.fm/lofi_high"
 chillhop = "!play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
 record = "!play https://hls-01-radiorecord.hostingradio.ru/record/playlist.m3u8"
@@ -74,8 +92,6 @@ energy = "!play http://pub0102.101.ru:8000/stream/air/aac/64/99"
 relax = "!play http://pub0102.101.ru:8000/stream/air/aac/64/200"
 nashe = "!play https://nashe1.hostingradio.ru/nashe-128.mp3"
 marusya = "!play https://radio-holding.ru:9433/marusya_default"
-
-# English shortcuts
 p = "!play"
 s = "!stop"
 n = "!next"
@@ -91,3 +107,9 @@ onkick = ["3s", "repeat last"]
 onban = []
 onerror = ["10s", "repeat last"]
 onshutdown = ["5m"]
+
+[playlists]
+
+[history]
+
+[events]
