@@ -6,8 +6,6 @@
 	# Basic stuff
 	"cmd.help.*",
 	"cmd.pm",
-	"cmd.subscribe",
-	"cmd.unsubscribe",
 	"cmd.kickme.*",
 	"cmd.version",
 	

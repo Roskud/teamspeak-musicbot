@@ -181,6 +181,8 @@ class TS3Bridge:
         self.tn = None
         self.ym_client = None
         self.current_track_title = None
+        self.current_bot_cid = 1
+        self.my_clid = None
 
     def init_ym(self):
         token = os.environ.get("YANDEX_MUSIC_TOKEN") or None
@@ -196,11 +198,36 @@ class TS3Bridge:
     def update_channel_desc(self):
         try:
             esc = ts3_escape(CHANNEL_DESC_TEXT)
-            cmd = f"channeledit cid=1 channel_description={esc}\n"
+            cmd = f"channeledit cid={self.current_bot_cid} channel_description={esc}\n"
             self.tn.write(cmd.encode('utf-8'))
-            print("[TS3] Updated channel 1 description with Russian bot guide.")
-        except Exception as e:
-            print(f"[TS3] Note: Could not update channel description: {e}")
+        except Exception:
+            pass
+
+    def sync_channel(self):
+        try:
+            self.tn.write(b"clientlist\n")
+            time.sleep(0.08)
+            raw = self.tn.read_very_eager().decode('utf-8', errors='ignore')
+            bot_cid = None
+            for client_str in raw.split('|'):
+                parts = client_str.split()
+                c_nick = next((p[16:] for p in parts if p.startswith('client_nickname=')), '')
+                c_cid = next((p[4:] for p in parts if p.startswith('cid=')), '')
+                c_clid = next((p[5:] for p in parts if p.startswith('clid=')), '')
+                if 'MusicBot' in c_nick and c_cid:
+                    bot_cid = int(c_cid)
+                if 'YandexBridge' in c_nick and c_clid:
+                    self.my_clid = int(c_clid)
+
+            if bot_cid and bot_cid != self.current_bot_cid:
+                print(f"[TS3] MusicBot is in voice channel {bot_cid}. Following...")
+                self.current_bot_cid = bot_cid
+                if self.my_clid:
+                    self.tn.write(f"clientmove clid={self.my_clid} cid={bot_cid}\n".encode('utf-8'))
+                self.tn.write(f"servernotifyregister event=textchannel id={bot_cid}\n".encode('utf-8'))
+                self.update_channel_desc()
+        except Exception:
+            pass
 
     def connect(self):
         print(f"[TS3] Connecting to ServerQuery {self.host}:{self.port}...")
@@ -211,12 +238,15 @@ class TS3Bridge:
             f"use sid=1\n"
             f"clientupdate client_nickname=YandexBridge\n"
             f"servernotifyregister event=textchannel id=1\n"
+            f"servernotifyregister event=textserver\n"
             f"servernotifyregister event=textprivate\n"
+            f"servernotifyregister event=channel id=0\n"
         )
         self.tn.write(login_cmd.encode('utf-8'))
         time.sleep(0.5)
         self.tn.read_very_eager()
         print("[TS3] Connected and listening to channel events.")
+        self.sync_channel()
         self.update_channel_desc()
 
     def send_channel_msg(self, msg_text):
@@ -430,9 +460,15 @@ class TS3Bridge:
         self.connect()
 
         buffer = ""
+        last_sync = 0
         while True:
             try:
                 time.sleep(0.15)
+                now = time.time()
+                if now - last_sync > 3.0:
+                    last_sync = now
+                    self.sync_channel()
+
                 chunk = self.tn.read_very_eager().decode('utf-8', errors='ignore')
                 if not chunk:
                     continue
@@ -440,7 +476,12 @@ class TS3Bridge:
                 while '\n' in buffer:
                     line, buffer = buffer.split('\n', 1)
                     line = line.strip()
-                    if not line or not line.startswith('notifytextmessage'):
+                    if not line:
+                        continue
+                    if line.startswith('notifyclientmoved'):
+                        self.sync_channel()
+                        continue
+                    if not line.startswith('notifytextmessage'):
                         continue
                     parts = line.split(' ')
                     msg_raw = next((p[4:] for p in parts if p.startswith('msg=')), '')
