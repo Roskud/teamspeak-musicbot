@@ -4,34 +4,11 @@
 
 # Default rights for any client
 "+" = [
-	# Basic stuff
-	"cmd.help.*",
-	"cmd.pm",
-	"cmd.kickme.*",
-	"cmd.version",
-	
-	# Getting song info
-	"cmd.song",
-	"cmd.repeat",
-	"cmd.random",
-
-	# Conditionals and basic scripting
-	"cmd.if",
-	"cmd.print",
-	"cmd.rng",
-	"cmd.eval",
-	"cmd.take",
-	"cmd.xecute",
-	"cmd.getmy.*",
-	"cmd.json.*",
-	"cmd.bot.use",
-	"cmd.rights.can",
-
-	# Bot avatar control
-	"cmd.bot.avatar.*",
+	# Song info in private chat
+	"cmd.song"
 ]
 
-# Admin rule for localhost
+# Admin rule for localhost (ServerQuery / ym_bridge)
 [[rule]]
 	ip = [ "127.0.0.1", "::1" ]
 	"+" = "*"
@@ -41,32 +18,8 @@
 	groupid = [ 6 ]
 	"+" = "*"
 
-# Playing rights for all server users
+# Block commands from Channel and Server chat to prevent duplicate bot replies and error messages.
+# All channel user commands (!play, !stop, !radio, etc.) are handled cleanly by YandexBridge.
 [[rule]]
-	"+" = [
-		# Play controls
-		"cmd.play",
-		"cmd.pause",
-		"cmd.stop",
-		"cmd.seek",
-		"cmd.volume",
-		"cmd.next",
-		"cmd.previous",
-
-		# Bot avatar
-		"cmd.bot.avatar.*",
-
-		# Search features
-		"cmd.search.*",
-
-		# Playlist management
-		"cmd.list.*",
-		"cmd.add",
-		"cmd.clear",
-		"cmd.random.*",
-		"cmd.repeat.*",
-
-		# History features
-		"cmd.history.*",
-		"cmd.alias.*"
-	]
+	visibility = [ "Channel", "Server" ]
+	"-" = "*"

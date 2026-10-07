@@ -171,39 +171,39 @@ RADIO_STATIONS = {
 }
 
 RADIO_LIST_TEXT = (
-    "[b][color=#fbc531]📻 РАДИОСТАНЦИИ:[/color][/b]\\n"
-    "• [b]!radio 1[/b] — Hunter FM Lo-Fi Hip Hop (24/7 чилл/учеба)\\n"
-    "• [b]!radio 2[/b] — FluxFM Chillhop HQ (Берлин)\\n"
-    "• [b]!radio 3[/b] — Lo-Fi Girl 24/7 (Beats to relax/study)\\n"
-    "• [b]!radio 4[/b] — Nightride Chillsynth (Синтвейв)\\n"
-    "• [b]!radio 5[/b] — Radio Record (Танцевальная/EDM)\\n"
-    "• [b]!radio 6[/b] — DFM (Клубная)\\n"
-    "• [b]!radio 7[/b] — Europa Plus (Топ хиты)\\n"
-    "• [b]!radio 8[/b] — Energy NRJ (Поп)\\n"
-    "• [b]!radio 9[/b] — Relax FM (Лаунж/Chillout)\\n"
-    "• [b]!radio 10[/b] — Наше Радио (Русский рок)\\n"
-    "• [b]!radio 11[/b] — Маруся FM (Русские хиты)\\n"
-    "[i]Для запуска напишите: !radio <номер> (например, !radio 1 или !lofi)[/i]"
+    "📻 РАДИОСТАНЦИИ:\n"
+    "• !radio 1 — Hunter FM Lo-Fi Hip Hop (24/7 чилл/учеба)\n"
+    "• !radio 2 — FluxFM Chillhop HQ (Берлин)\n"
+    "• !radio 3 — Lo-Fi Girl 24/7 (Beats to relax/study)\n"
+    "• !radio 4 — Nightride Chillsynth (Синтвейв)\n"
+    "• !radio 5 — Radio Record (Танцевальная/EDM)\n"
+    "• !radio 6 — DFM (Клубная)\n"
+    "• !radio 7 — Europa Plus (Топ хиты)\n"
+    "• !radio 8 — Energy NRJ (Поп)\n"
+    "• !radio 9 — Relax FM (Лаунж/Chillout)\n"
+    "• !radio 10 — Наше Радио (Русский рок)\n"
+    "• !radio 11 — Маруся FM (Русские хиты)\n"
+    "Для запуска напишите: !radio <номер> (например, !radio 1 или !lofi)"
 )
 
 COMMANDS_HELP_TEXT = (
-    "[b][color=#0984e3]🎵 КОМАНДЫ МУЗЫКАЛЬНОГО БОТА (Яндекс.Музыка и Радио):[/color][/b]\\n\\n"
-    "[b]▶ ВОСПРОИЗВЕДЕНИЕ (Яндекс.Музыка):[/b]\\n"
-    "• [b]!play <название песни или артист>[/b] — поиск и воспроизведение любого трека из Яндекс.Музыки\\n"
-    "• [b]!play <ссылка на трек Яндекс.Музыки>[/b] — воспроизведение по прямой ссылке\\n"
-    "  [i](Пример: !play Король и Шут Лесник или !p Anna Asti)[/i]\\n\\n"
-    "[b]📻 РАДИОСТАНЦИИ (Lo-Fi и радио):[/b]\\n"
-    "• [b]!radio[/b] — список всех 11 доступных радиостанций\\n"
-    "• [b]!radio <1..11>[/b] (или [b]!r <1..11>[/b]) — включить радиостанцию\\n"
-    "• [b]!lofi[/b] — быстрый запуск круглосуточного Lo-Fi Hip Hop\\n\\n"
-    "[b]⚙️ УПРАВЛЕНИЕ МУЗЫКОЙ:[/b]\\n"
-    "• [b]!pause[/b] — пауза / снять с паузы\\n"
-    "• [b]!stop[/b] (или [b]!s[/b]) — остановить воспроизведение\\n"
-    "• [b]!volume <0..100>[/b] (или [b]!vol <число>[/b]) — изменить громкость (0-100%)\\n"
-    "• [b]!song[/b] (или [b]!np[/b]) — узнать, что сейчас играет\\n"
-    "• [b]!clear[/b] — очистить очередь воспроизведения\\n"
-    "• [b]!commands[/b] (или [b]!help[/b], [b]!помощь[/b]) — открыть эту справку\\n\\n"
-    "[color=#e74c3c][b]Примечание:[/b] Сервисы YouTube, SoundCloud и VK отключены. Все команды работают также через слэш (например /play, /radio, /stop).[/color]"
+    "🎵 КОМАНДЫ МУЗЫКАЛЬНОГО БОТА (Яндекс.Музыка и Радио):\n\n"
+    "▶ ВОСПРОИЗВЕДЕНИЕ (Яндекс.Музыка):\n"
+    "• !play <название песни или артист> — поиск и воспроизведение любого трека из Яндекс.Музыки\n"
+    "• !play <ссылка на трек Яндекс.Музыки> — воспроизведение по прямой ссылке\n"
+    "  (Пример: !play Король и Шут Лесник или !p Anna Asti)\n\n"
+    "📻 РАДИОСТАНЦИИ (Lo-Fi и радио):\n"
+    "• !radio — список всех 11 доступных радиостанций\n"
+    "• !radio <1..11> (или !r <1..11>) — включить радиостанцию\n"
+    "• !lofi — быстрый запуск круглосуточного Lo-Fi Hip Hop\n\n"
+    "⚙️ УПРАВЛЕНИЕ МУЗЫКОЙ:\n"
+    "• !pause — пауза / снять с паузы\n"
+    "• !stop (или !s) — остановить воспроизведение\n"
+    "• !volume <0..100> (или !vol <число>) — изменить громкость (0-100%)\n"
+    "• !song (или !np) — узнать, что сейчас играет\n"
+    "• !clear — очистить очередь воспроизведения\n"
+    "• !commands (или !help, !помощь) — открыть эту справку\n\n"
+    "Примечание: Сервисы YouTube, SoundCloud и VK отключены. Все команды работают также через слэш (например /play, /radio, /stop)."
 )
 
 CHANNEL_DESC_TEXT = (
@@ -293,19 +293,29 @@ class TS3Bridge:
 
     def sync_channel(self):
         try:
-            self.tn.write(b"clientlist\n")
+            self.tn.write(b"clientlist -uid\n")
             time.sleep(0.08)
             raw = self.tn.read_very_eager().decode('utf-8', errors='ignore')
             bot_cid = None
+            bot_cldbid = None
             for client_str in raw.split('|'):
                 parts = client_str.split()
                 c_nick = next((p[16:] for p in parts if p.startswith('client_nickname=')), '')
                 c_cid = next((p[4:] for p in parts if p.startswith('cid=')), '')
                 c_clid = next((p[5:] for p in parts if p.startswith('clid=')), '')
-                if 'MusicBot' in c_nick and c_cid:
-                    bot_cid = int(c_cid)
+                c_cldbid = next((p[19:] for p in parts if p.startswith('client_database_id=')), '')
+                if 'MusicBot' in c_nick:
+                    if c_cid:
+                        bot_cid = int(c_cid)
+                    if c_cldbid:
+                        bot_cldbid = int(c_cldbid)
                 if 'YandexBridge' in c_nick and c_clid:
                     self.my_clid = int(c_clid)
+
+            # Silencing MusicBot from sending channel text messages (prevent duplicate errors)
+            if bot_cldbid and getattr(self, '_silenced_cldbid', None) != bot_cldbid:
+                self.tn.write(f"clientaddperm cldbid={bot_cldbid} permsid=b_client_channel_textmessage_send permvalue=0 permnegated=1 permskip=1\n".encode('utf-8'))
+                self._silenced_cldbid = bot_cldbid
 
             if bot_cid and bot_cid != self.current_bot_cid:
                 print(f"[TS3] MusicBot is in voice channel {bot_cid}. Following...")
@@ -453,7 +463,7 @@ class TS3Bridge:
                 return
             if arg in RADIO_STATIONS:
                 name, url = RADIO_STATIONS[arg]
-                self.send_channel_msg(f"[b][color=#fbc531]📻 Запуск радио:[/color] {name}[/b]")
+                self.send_channel_msg(f"📻 Запуск радио: {name}")
                 self.set_bot_avatar(f"http://127.0.0.1:{self.stream_port}/ym_logo.png")
                 StreamHandler.current_stream_url = url
                 StreamHandler.current_title = f"Радио: {name}"
@@ -463,12 +473,12 @@ class TS3Bridge:
                 self.command_bot_silent(f"!play {stream_url}")
                 return
             else:
-                self.send_channel_msg(f"[color=red]Неверный номер станции: {arg}. Доступны номера 1..11. Введите !radio для списка.[/color]")
+                self.send_channel_msg(f"Неверный номер станции: {arg}. Доступны номера 1..11. Введите !radio для списка.")
                 return
 
         if cmd in ["r"] and arg in RADIO_STATIONS:
             name, url = RADIO_STATIONS[arg]
-            self.send_channel_msg(f"[b][color=#fbc531]📻 Запуск радио:[/color] {name}[/b]")
+            self.send_channel_msg(f"📻 Запуск радио: {name}")
             self.set_bot_avatar(f"http://127.0.0.1:{self.stream_port}/ym_logo.png")
             StreamHandler.current_stream_url = url
             StreamHandler.current_title = f"Радио: {name}"
@@ -480,7 +490,7 @@ class TS3Bridge:
 
         if cmd in ["lofi", "лофи"]:
             name, url = RADIO_STATIONS["1"]
-            self.send_channel_msg(f"[b][color=#fbc531]📻 Запуск радио:[/color] {name}[/b]")
+            self.send_channel_msg(f"📻 Запуск радио: {name}")
             self.set_bot_avatar(f"http://127.0.0.1:{self.stream_port}/ym_logo.png")
             StreamHandler.current_stream_url = url
             StreamHandler.current_title = f"Радио: {name}"
@@ -493,21 +503,21 @@ class TS3Bridge:
         # 3. PLAY / P (Yandex Music)
         if cmd in ["play", "p", "включи", "играть", "ym"]:
             if not arg:
-                self.send_channel_msg("[color=red]Укажите название песни или ссылку Яндекс.Музыки (например: !play Король и Шут)[/color]")
+                self.send_channel_msg("Укажите название песни или ссылку Яндекс.Музыки (например: !play Король и Шут)")
                 return
 
             lower_arg = arg.lower()
             if any(b in lower_arg for b in ["youtube.com", "youtu.be", "soundcloud.com"]):
-                self.send_channel_msg("[b][color=red]❌ Сервисы YouTube и SoundCloud отключены.[/color] Поддерживается только [color=#0984e3]Яндекс.Музыка[/color] и [color=#fbc531]Радио[/color].[/b]")
+                self.send_channel_msg("❌ Сервисы YouTube и SoundCloud отключены. Поддерживается только Яндекс.Музыка и Радио.")
                 return
 
             if any(b in lower_arg for b in ["vk.com", "vk.ru"]):
-                self.send_channel_msg("[b][color=red]❌ ВКонтакте не поддерживается.[/color] Напишите название трека через [b]!play <название>[/b], чтобы включить его из [color=#0984e3]Яндекс.Музыки[/color].[/b]")
+                self.send_channel_msg("❌ ВКонтакте не поддерживается. Напишите название трека через !play <название>, чтобы включить его из Яндекс.Музыки.")
                 return
 
             direct_link, title_or_err, cover_url = self.resolve_yandex(arg)
             if not direct_link:
-                self.send_channel_msg(f"[color=red]❌ {title_or_err}[/color]")
+                self.send_channel_msg(f"❌ {title_or_err}")
                 return
 
             # Store in stream handler for 302 redirect
@@ -520,7 +530,7 @@ class TS3Bridge:
             self.set_bot_avatar(cover_url)
 
             # Send single, clean confirmation to channel (NO search progress, NO raw commands)
-            self.send_channel_msg(f"[b][color=#2ecc71]▶ Играет Яндекс.Музыка:[/color] {title_or_err}[/b]")
+            self.send_channel_msg(f"▶ Играет Яндекс.Музыка: {title_or_err}")
 
             # Command bot to stream quietly via PM
             stream_url = f"http://127.0.0.1:{self.stream_port}/stream/{int(time.time())}.mp3"
@@ -534,13 +544,13 @@ class TS3Bridge:
             StreamHandler.current_title = ""
             self.command_bot_silent("!stop")
             self.clear_bot_avatar()
-            self.send_channel_msg("[b]⏹️ Воспроизведение остановлено.[/b]")
+            self.send_channel_msg("⏹️ Воспроизведение остановлено.")
             return
 
         # 5. PAUSE
         if cmd in ["pause", "пауза"]:
             self.command_bot_silent("!pause")
-            self.send_channel_msg("[b]⏸️ Пауза / продолжение воспроизведения.[/b]")
+            self.send_channel_msg("⏸️ Пауза / продолжение воспроизведения.")
             return
 
         # 6. CLEAR
@@ -551,14 +561,14 @@ class TS3Bridge:
             self.command_bot_silent("!clear")
             self.command_bot_silent("!stop")
             self.clear_bot_avatar()
-            self.send_channel_msg("[b]🗑️ Очередь очищена, воспроизведение остановлено.[/b]")
+            self.send_channel_msg("🗑️ Очередь очищена, воспроизведение остановлено.")
             return
 
         # 7. VOLUME / VOL
         if cmd in ["volume", "vol", "громкость"]:
             if arg:
                 self.command_bot_silent(f"!volume {arg}")
-                self.send_channel_msg(f"[b]🔊 Громкость установлена на {arg}%.[/b]")
+                self.send_channel_msg(f"🔊 Громкость установлена на {arg}%.")
             else:
                 self.command_bot_silent("!volume")
             return
@@ -566,9 +576,9 @@ class TS3Bridge:
         # 8. SONG / NP
         if cmd in ["song", "np", "трек", "песня"]:
             if self.current_track_title:
-                self.send_channel_msg(f"[b]🎵 Сейчас играет:[/b] {self.current_track_title}")
+                self.send_channel_msg(f"🎵 Сейчас играет: {self.current_track_title}")
             else:
-                self.send_channel_msg("[i]Сейчас ничего не играет. Включите трек: !play <название> или !radio 1..11[/i]")
+                self.send_channel_msg("Сейчас ничего не играет. Включите трек: !play <название> или !radio 1..11")
             return
 
     def run(self):

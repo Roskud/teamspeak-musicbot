@@ -8,7 +8,7 @@
 #You can set this field manually if you already have a preexisting group the bot should add himself to.
 bot_group_id = 0
 #Tries to fetch a cover image when playing.
-generate_status_avatar = true
+generate_status_avatar = false
 #Sets the description of the bot to the current song title.
 set_status_description = true
 #The language the bot should use to respond to users. (Make sure you have added the required language packs)
@@ -21,7 +21,7 @@ run = true
 # - exact : Only when the command matches exactly.
 # - substring : The shortest command starting with the given prefix.
 # - ic3 : 'interleaved continuous character chain' A fuzzy algorithm similar to hamming distance but preferring characters at the start.
-matcher = "ic3"
+matcher = "exact"
 #Defines how the bot handles messages which are too long for a single ts3 message. Options are:
 # - split : The message will be split up into multiple messages.
 # - drop : Does not send the message.
@@ -29,50 +29,11 @@ long_message = "Split"
 #Limits the split count for long messages. When for example set to 1 the message will simply be trimmed to one message.
 long_message_split_limit = 2
 #Enables colors and text highlights for respones.
-color = true
+color = false
 #Limits the maximum command complexity to prevent endless loops.
 command_complexity = 64
 
 [bot.commands.alias]
-"radio 1" = "play https://live.hunter.fm/lofi_high"
-"radio 2" = "play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
-"radio 3" = "play https://play.streamafrica.net/lofi-hip-hop"
-"radio 4" = "play https://stream.nightride.fm/chillsynth.mp3"
-"radio 5" = "play https://hls-01-radiorecord.hostingradio.ru/record/playlist.m3u8"
-"radio 6" = "play http://dfm.hostingradio.ru/dfm128.mp3"
-"radio 7" = "play http://ep128.hostingradio.ru:8030/ep128"
-"radio 8" = "play http://pub0102.101.ru:8000/stream/air/aac/64/99"
-"radio 9" = "play http://pub0102.101.ru:8000/stream/air/aac/64/200"
-"radio 10" = "play https://nashe1.hostingradio.ru/nashe-128.mp3"
-"radio 11" = "play https://radio-holding.ru:9433/marusya_default"
-"r 1" = "play https://live.hunter.fm/lofi_high"
-"r 2" = "play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
-"r 3" = "play https://play.streamafrica.net/lofi-hip-hop"
-"r 4" = "play https://stream.nightride.fm/chillsynth.mp3"
-"r 5" = "play https://hls-01-radiorecord.hostingradio.ru/record/playlist.m3u8"
-"r 6" = "play http://dfm.hostingradio.ru/dfm128.mp3"
-"r 7" = "play http://ep128.hostingradio.ru:8030/ep128"
-"r 8" = "play http://pub0102.101.ru:8000/stream/air/aac/64/99"
-"r 9" = "play http://pub0102.101.ru:8000/stream/air/aac/64/200"
-"r 10" = "play https://nashe1.hostingradio.ru/nashe-128.mp3"
-"r 11" = "play https://radio-holding.ru:9433/marusya_default"
-lofi = "play https://live.hunter.fm/lofi_high"
-chillhop = "play https://streams.fluxfm.de/chillhop/mp3-320/audio/"
-record = "play https://hls-01-radiorecord.hostingradio.ru/record/playlist.m3u8"
-dfm = "play http://dfm.hostingradio.ru/dfm128.mp3"
-europa = "play http://ep128.hostingradio.ru:8030/ep128"
-energy = "play http://pub0102.101.ru:8000/stream/air/aac/64/99"
-relax = "play http://pub0102.101.ru:8000/stream/air/aac/64/200"
-nashe = "play https://nashe1.hostingradio.ru/nashe-128.mp3"
-marusya = "play https://radio-holding.ru:9433/marusya_default"
-p = "play"
-s = "stop"
-n = "next"
-skip = "next"
-q = "list"
-queue = "list"
-vol = "volume"
-np = "song"
 
 [bot.connect]
 #The server password. Leave empty for none.
