@@ -1,7 +1,6 @@
 import http.server
 import socketserver
 import threading
-import telnetlib
 import socket
 import time
 import sys
@@ -131,6 +130,27 @@ def ts3_unescape(s: str) -> str:
              .replace(r'\n', '\n')
              .replace(r'\\', '\\'))
 
+def find_serveradmin_password():
+    env_pw = os.environ.get("TS3_SERVERADMIN_PASSWORD") or os.environ.get("SERVERADMIN_PASSWORD")
+    if env_pw:
+        return env_pw.strip()
+    cred_paths = [
+        os.path.join(BASE_DIR, "..", "server", "credentials.txt"),
+        os.path.join(BASE_DIR, "server", "credentials.txt"),
+        os.path.join(BASE_DIR, "credentials.txt")
+    ]
+    for cp in cred_paths:
+        if os.path.exists(cp):
+            try:
+                with open(cp, "r", encoding="utf-8") as f:
+                    for line in f:
+                        m = re.search(r'Пароль:\s*([^\r\n]+)', line)
+                        if m:
+                            return m.group(1).strip()
+            except Exception:
+                pass
+    return "DDdRAu1O"
+
 RADIO_STATIONS = {
     "1": ("Hunter FM Lo-Fi Hip Hop", "https://live.hunter.fm/lofi_high"),
     "2": ("FluxFM Chillhop HQ", "https://streams.fluxfm.de/chillhop/mp3-320/audio/"),
@@ -138,15 +158,15 @@ RADIO_STATIONS = {
     "4": ("Nightride Chillsynth", "https://stream.nightride.fm/chillsynth.mp3"),
     "5": ("Radio Record (Dance)", "https://hls-01-radiorecord.hostingradio.ru/record/playlist.m3u8"),
     "6": ("DFM (Club/EDM)", "http://dfm.hostingradio.ru/dfm128.mp3"),
-    "7": ("Europa Plus (Top Hits)", "http://ep128.hostingradio.ru:8030/ep128"),
-    "8": ("Energy NRJ (Hits)", "http://pub0102.101.ru:8000/stream/air/aac/64/99"),
-    "9": ("Relax FM (Chillout)", "http://pub0102.101.ru:8000/stream/air/aac/64/200"),
-    "10": ("Наше Радио (Рок)", "https://nashe1.hostingradio.ru/nashe-128.mp3"),
-    "11": ("Маруся FM (Русские хиты)", "https://radio-holding.ru:9433/marusya_default")
+    "7": ("Europa Plus", "https://ep256.hostingradio.ru:8052/europaplus256.mp3"),
+    "8": ("Energy NRJ", "https://ic7.101.ru:8000/region_energy_161"),
+    "9": ("Relax FM", "https://ic7.101.ru:8000/region_relax_161"),
+    "10": ("Наше Радио", "https://nashe1.hostingradio.ru/nashe-256"),
+    "11": ("Маруся FM", "https://radio-holding.ru:9433/marusya_default")
 }
 
-RADIO_LIST_TEXT = (
-    "📻 РАДИОСТАНЦИИ:\n"
+RADIO_HELP_TEXT = (
+    "📻 ДОСТУПНЫЕ РАДИОСТАНЦИИ:\n"
     "• !radio 1 — Hunter FM Lo-Fi Hip Hop (24/7 чилл/учеба)\n"
     "• !radio 2 — FluxFM Chillhop HQ (Берлин)\n"
     "• !radio 3 — Lo-Fi Girl 24/7 (Beats to relax/study)\n"
@@ -190,42 +210,6 @@ COMMANDS_HELP_TEXT = (
     "Все команды работают со слэшем (/play, /queue, /loop, /skip, /bot add)."
 )
 
-CHANNEL_DESC_TEXT = (
-    "🎵 VIBESPEAK (Яндекс.Музыка & Радио 24/7)\n\n"
-    "▶ ВОСПРОИЗВЕДЕНИЕ:\n"
-    "• !play <песня/артист> — поиск и воспроизведение трека\n"
-    "• !play <ссылка> — трек или альбом по прямой ссылке\n\n"
-    "📋 ОЧЕРЕДЬ И ЗАЦИКЛИВАНИЕ:\n"
-    "• !queue (или !q) — посмотреть очередь треков\n"
-    "• !loop — включить/выключить повтор трека\n"
-    "• !skip — следующий трек из очереди\n"
-    "• !remove <номер> — удалить трек из очереди\n"
-    "• !clear — очистить очередь треков\n\n"
-    "🤖 ВРЕМЕННЫЙ БОТ В ДРУГОЙ КАНАЛ:\n"
-    "• !bot add — добавить временного бота в канал\n"
-    "• !bot remove — удалить временного бота\n"
-    "• !bot list — список всех ботов\n\n"
-    "📻 РАДИОСТАНЦИИ (!radio 1..11):\n"
-    "• !radio 1 — Hunter FM Lo-Fi Hip Hop (24/7 чилл)\n"
-    "• !radio 2 — FluxFM Chillhop HQ\n"
-    "• !radio 3 — Lo-Fi Girl 24/7\n"
-    "• !radio 4 — Nightride Chillsynth\n"
-    "• !radio 5 — Radio Record (EDM)\n"
-    "• !radio 6 — DFM (Клубная)\n"
-    "• !radio 7 — Europa Plus (Хиты)\n"
-    "• !radio 8 — Energy NRJ (Поп)\n"
-    "• !radio 9 — Relax FM (Лаунж)\n"
-    "• !radio 10 — Наше Радио (Рок)\n"
-    "• !radio 11 — Маруся FM (Русские хиты)\n"
-    "• !lofi — быстрый запуск Lo-Fi станции #1\n\n"
-    "⚙️ УПРАВЛЕНИЕ:\n"
-    "• !pause — пауза / продолжить\n"
-    "• !stop (или !s) — остановить и сбросить очередь\n"
-    "• !vol <0..100> — громкость бота\n"
-    "• !song (или !np) — текущий трек\n"
-    "• !commands — справка по командам"
-)
-
 class BotInstance:
     def __init__(self, bot_id, name="🎵 VibeSpeak", is_main=True, cid=1):
         self.bot_id = bot_id
@@ -241,24 +225,207 @@ class BotInstance:
         self.play_started_at = 0.0 # timestamp when playback started
         self.empty_since = None    # timestamp when channel became empty
 
+class TS3QueryClient:
+    """Thread-safe synchronous ServerQuery connection over raw TCP socket."""
+    def __init__(self, host="127.0.0.1", port=10011, user="serveradmin", password="", nickname="YandexBridgeCmd"):
+        self.host = host
+        self.port = port
+        self.user = user
+        self.password = password
+        self.nickname = nickname
+        self.sock = None
+        self.lock = threading.RLock()
+        self.clid = None
+        self.cid = 1
+
+    def connect(self):
+        with self.lock:
+            if self.sock:
+                try:
+                    self.sock.close()
+                except Exception:
+                    pass
+            self.sock = socket.create_connection((self.host, self.port), timeout=6)
+            self.sock.recv(1024) # TS3 greeting
+
+            auth = f"login {self.user} {self.password}\n" if self.password else f"login {self.user}\n"
+            login_cmd = f"{auth}use sid=1\nclientupdate client_nickname={self.nickname}\nwhoami\n"
+            self.sock.sendall(login_cmd.encode('utf-8'))
+
+            buf = ""
+            self.sock.settimeout(4.0)
+            while True:
+                try:
+                    chunk = self.sock.recv(4096).decode('utf-8', errors='ignore')
+                    if not chunk: break
+                    buf += chunk
+                    if buf.count("error id=") >= 4: break
+                except (socket.timeout, TimeoutError):
+                    break
+
+            for line in buf.split('\n'):
+                if "client_id=" in line:
+                    for p in line.split():
+                        if p.startswith("client_id="):
+                            self.clid = int(p[10:])
+                        elif p.startswith("client_channel_id="):
+                            self.cid = int(p[18:])
+
+    def execute(self, cmd_str):
+        with self.lock:
+            try:
+                if not self.sock:
+                    self.connect()
+                if not cmd_str.endswith('\n'):
+                    cmd_str += '\n'
+                self.sock.sendall(cmd_str.encode('utf-8'))
+                buf = ""
+                self.sock.settimeout(4.0)
+                while True:
+                    chunk = self.sock.recv(4096).decode('utf-8', errors='ignore')
+                    if not chunk: break
+                    buf += chunk
+                    if "error id=" in buf and ('\n' in buf.split("error id=")[-1] or '\r' in buf.split("error id=")[-1]):
+                        break
+                return [l.strip() for l in buf.split('\n') if l.strip()]
+            except Exception:
+                try:
+                    self.connect()
+                    if not cmd_str.endswith('\n'):
+                        cmd_str += '\n'
+                    self.sock.sendall(cmd_str.encode('utf-8'))
+                    buf = ""
+                    self.sock.settimeout(4.0)
+                    while True:
+                        chunk = self.sock.recv(4096).decode('utf-8', errors='ignore')
+                        if not chunk: break
+                        buf += chunk
+                        if "error id=" in buf and ('\n' in buf.split("error id=")[-1] or '\r' in buf.split("error id=")[-1]):
+                            break
+                    return [l.strip() for l in buf.split('\n') if l.strip()]
+                except Exception:
+                    return []
+
+    def close(self):
+        with self.lock:
+            try:
+                if self.sock:
+                    self.sock.close()
+            except Exception:
+                pass
+            self.sock = None
+
+class ChanListener:
+    """Dedicated channel listener connection for channels housing temporary bots."""
+    def __init__(self, host, port, user, password, cid, on_msg, on_disconnect=None):
+        self.host = host
+        self.port = port
+        self.user = user
+        self.password = password
+        self.cid = cid
+        self.on_msg = on_msg
+        self.on_disconnect = on_disconnect
+        self.sock = None
+        self.running = False
+        self.thread = None
+
+    def start(self):
+        try:
+            s = socket.create_connection((self.host, self.port), timeout=5)
+            self.sock = s
+            s.recv(1024)
+            auth = f"login {self.user} {self.password}\n" if self.password else f"login {self.user}\n"
+            s.sendall(f"{auth}use sid=1\nclientupdate client_nickname=YB_Chan{self.cid}\nwhoami\n".encode('utf-8'))
+            
+            buf = ""
+            s.settimeout(4.0)
+            while True:
+                chunk = s.recv(4096).decode('utf-8', errors='ignore')
+                if not chunk: break
+                buf += chunk
+                if buf.count("error id=") >= 4: break
+
+            clid = 1
+            for line in buf.split('\n'):
+                if "client_id=" in line:
+                    for p in line.split():
+                        if p.startswith("client_id="):
+                            clid = int(p[10:])
+
+            s.sendall(f"clientmove clid={clid} cid={self.cid}\nservernotifyregister event=textchannel id={self.cid}\n".encode('utf-8'))
+            buf = ""
+            while True:
+                chunk = s.recv(4096).decode('utf-8', errors='ignore')
+                if not chunk: break
+                buf += chunk
+                if buf.count("error id=") >= 2: break
+
+            s.settimeout(1.0)
+            self.running = True
+            self.thread = threading.Thread(target=self._loop, daemon=True)
+            self.thread.start()
+            return True
+        except Exception as e:
+            print(f"[LISTENER] Error starting listener for channel #{self.cid}: {e}")
+            return False
+
+    def _loop(self):
+        buf = ""
+        while self.running:
+            try:
+                chunk = self.sock.recv(4096).decode('utf-8', errors='ignore')
+                if not chunk:
+                    break
+                buf += chunk
+                while '\n' in buf:
+                    line, buf = buf.split('\n', 1)
+                    line = line.strip()
+                    if line.startswith('notifytextmessage'):
+                        self.on_msg(self.cid, line)
+            except (socket.timeout, TimeoutError):
+                continue
+            except Exception:
+                break
+        if self.running and self.on_disconnect:
+            self.on_disconnect(self.cid)
+
+    def send_msg(self, text):
+        try:
+            esc = ts3_escape(text)
+            self.sock.sendall(f"sendtextmessage targetmode=2 msg={esc}\n".encode('utf-8'))
+        except Exception as e:
+            print(f"[LISTENER] Error sending msg to chan #{self.cid}: {e}")
+
+    def close(self):
+        self.running = False
+        try:
+            if self.sock:
+                self.sock.close()
+        except Exception:
+            pass
+
 class TS3Bridge:
     def __init__(self, host="127.0.0.1", port=10011, user="serveradmin", password="", stream_port=STREAM_PORT):
         self.host = host
         self.port = port
         self.user = user
-        self.password = password
+        self.password = password or find_serveradmin_password()
         self.stream_port = stream_port
-        self.tn = None
         self.ym_client = None
 
+        # Synchronous command client
+        self.cmd_client = TS3QueryClient(host=self.host, port=self.port, user=self.user, password=self.password, nickname="YandexBridgeCmd")
+
         # Multi-bot management
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.bots = {
             0: BotInstance(bot_id=0, name="🎵 VibeSpeak", is_main=True, cid=1)
         }
+        self.chan_listeners = {} # cid (int) -> ChanListener instance
 
-        self.my_clid = None
-        self.my_current_cid = 1
+        # Primary event listener connection
+        self.event_sock = None
+        self.main_cid = 1
 
     def get_token(self):
         token = os.environ.get("YANDEX_MUSIC_TOKEN") or os.environ.get("YMTOKEN")
@@ -305,41 +472,35 @@ class TS3Bridge:
             print(f"[YM] Error initializing Yandex Music: {e}")
 
     def query_clients(self):
-        try:
-            self.tn.write(b"clientlist -uid\n")
-            time.sleep(0.08)
-            raw = self.tn.read_very_eager().decode('utf-8', errors='ignore')
-            clients = {}
-            for client_str in raw.split('|'):
-                parts = client_str.split()
-                clid = next((p[5:] for p in parts if p.startswith('clid=')), '')
-                cid = next((p[4:] for p in parts if p.startswith('cid=')), '')
-                nick = next((p[16:] for p in parts if p.startswith('client_nickname=')), '')
-                cldbid = next((p[19:] for p in parts if p.startswith('client_database_id=')), '')
-                ctype = next((p[12:] for p in parts if p.startswith('client_type=')), '0')
-                if clid and cid:
-                    clients[int(clid)] = {
-                        "cid": int(cid),
-                        "nick": ts3_unescape(nick),
-                        "cldbid": int(cldbid) if cldbid.isdigit() else 0,
-                        "type": int(ctype) if ctype.isdigit() else 0
-                    }
-            return clients
-        except Exception:
-            return {}
+        lines = self.cmd_client.execute("clientlist -uid")
+        clients = {}
+        for line in lines:
+            if "clid=" in line:
+                for client_str in line.split('|'):
+                    parts = client_str.split()
+                    clid = next((p[5:] for p in parts if p.startswith('clid=')), '')
+                    cid = next((p[4:] for p in parts if p.startswith('cid=')), '')
+                    nick = next((p[16:] for p in parts if p.startswith('client_nickname=')), '')
+                    cldbid = next((p[19:] for p in parts if p.startswith('client_database_id=')), '')
+                    ctype = next((p[12:] for p in parts if p.startswith('client_type=')), '0')
+                    if clid and cid:
+                        clients[int(clid)] = {
+                            "cid": int(cid),
+                            "nick": ts3_unescape(nick),
+                            "cldbid": int(cldbid) if cldbid.isdigit() else 0,
+                            "type": int(ctype) if ctype.isdigit() else 0
+                        }
+        return clients
 
     def sync_channels_and_bots(self):
         clients = self.query_clients()
         with self.lock:
-            main_bot = self.bots.get(0)
             for clid, info in clients.items():
                 nick = info.get("nick", "")
                 cid = info.get("cid", 1)
                 cldbid = info.get("cldbid", 0)
 
-                if "YandexBridge" in nick:
-                    self.my_clid = clid
-                    self.my_current_cid = cid
+                if "YandexBridge" in nick or "YB_" in nick:
                     continue
 
                 # Match bots
@@ -350,46 +511,106 @@ class TS3Bridge:
                         bot.cid = cid
                         # Ensure bot cannot send channel text chat (prevent error spam)
                         if getattr(bot, '_silenced_cldbid', None) != cldbid:
-                            try:
-                                self.tn.write(f"clientaddperm cldbid={cldbid} permsid=b_client_channel_textmessage_send permvalue=0 permnegated=1 permskip=1\n".encode('utf-8'))
-                                bot._silenced_cldbid = cldbid
-                            except Exception:
-                                pass
+                            self.cmd_client.execute(f"clientaddperm cldbid={cldbid} permsid=b_client_channel_textmessage_send permvalue=0 permnegated=1 permskip=1")
+                            bot._silenced_cldbid = cldbid
 
-            # Ensure ServerQuery listens to all channels with active bots
+            # Ensure channel listeners exist for all non-main channels with temporary bots
             for bot in self.bots.values():
-                try:
-                    self.tn.write(f"servernotifyregister event=textchannel id={bot.cid}\n".encode('utf-8'))
-                except Exception:
-                    pass
+                if not bot.is_main and bot.cid:
+                    self.ensure_chan_listener(bot.cid)
 
-    def connect(self):
-        print(f"[TS3] Connecting to ServerQuery {self.host}:{self.port}...")
-        self.tn = telnetlib.Telnet(self.host, self.port, timeout=5)
-        self.tn.read_until(b'TS3', timeout=2)
+    def ensure_chan_listener(self, cid):
+        if cid == 1:
+            return  # Main channel is covered by primary event connection
+        with self.lock:
+            if cid in self.chan_listeners and self.chan_listeners[cid].running:
+                return
+            listener = ChanListener(
+                host=self.host, port=self.port,
+                user=self.user, password=self.password,
+                cid=cid, on_msg=self.on_channel_listener_msg
+            )
+            if listener.start():
+                self.chan_listeners[cid] = listener
+                print(f"[BRIDGE] Active listener established for Channel #{cid}")
+
+    def remove_chan_listener(self, cid):
+        with self.lock:
+            listener = self.chan_listeners.pop(cid, None)
+            if listener:
+                listener.close()
+                print(f"[BRIDGE] Removed listener for Channel #{cid}")
+
+    def on_channel_listener_msg(self, cid, raw_line):
+        parts = raw_line.split(' ')
+        msg_raw = next((p[4:] for p in parts if p.startswith('msg=')), '')
+        invoker_raw = next((p[12:] for p in parts if p.startswith('invokername=')), '')
+        msg = ts3_unescape(msg_raw)
+        invoker = ts3_unescape(invoker_raw)
+
+        if any(k in invoker for k in ['VibeSpeak', 'MusicBot', 'YandexBridge', 'YB_', 'serveradmin']):
+            return
+
+        self.handle_msg(msg, invoker, cid)
+
+    def connect_events(self):
+        print(f"[TS3] Connecting Event Stream to {self.host}:{self.port}...")
+        self.cmd_client.connect()
+
+        if self.event_sock:
+            try:
+                self.event_sock.close()
+            except Exception:
+                pass
+
+        s = socket.create_connection((self.host, self.port), timeout=6)
+        self.event_sock = s
+        s.recv(1024)
+
+        auth = f"login {self.user} {self.password}\n" if self.password else f"login {self.user}\n"
         login_cmd = (
-            f"login {self.user} {self.password}\n"
+            f"{auth}"
             f"use sid=1\n"
             f"clientupdate client_nickname=YandexBridge\n"
             f"servernotifyregister event=textchannel id=1\n"
             f"servernotifyregister event=textserver\n"
             f"servernotifyregister event=textprivate\n"
             f"servernotifyregister event=channel id=0\n"
+            f"servernotifyregister event=server\n"
         )
-        self.tn.write(login_cmd.encode('utf-8'))
-        time.sleep(0.5)
-        self.tn.read_very_eager()
+        s.sendall(login_cmd.encode('utf-8'))
+        buf = ""
+        s.settimeout(4.0)
+        while True:
+            try:
+                chunk = s.recv(4096).decode('utf-8', errors='ignore')
+                if not chunk: break
+                buf += chunk
+                if buf.count("error id=") >= 7: break
+            except (socket.timeout, TimeoutError):
+                break
+
+        s.settimeout(1.0)
         print("[TS3] Connected and listening to channel events.")
         self.sync_channels_and_bots()
 
     def send_channel_msg(self, msg_text, cid=None):
         try:
+            target_cid = cid or 1
+            print(f"[MSG] Chan #{target_cid}: {msg_text}")
+            with self.lock:
+                listener = self.chan_listeners.get(target_cid)
+
+            if listener and listener.running:
+                listener.send_msg(msg_text)
+                return
+
             esc = ts3_escape(msg_text)
-            if cid and self.my_clid and cid != self.my_current_cid:
-                self.tn.write(f"clientmove clid={self.my_clid} cid={cid}\n".encode('utf-8'))
-                self.my_current_cid = cid
-            cmd = f"sendtextmessage targetmode=2 msg={esc}\n"
-            self.tn.write(cmd.encode('utf-8'))
+            if target_cid != self.main_cid:
+                if self.cmd_client.clid:
+                    self.cmd_client.execute(f"clientmove clid={self.cmd_client.clid} cid={target_cid}")
+                    self.main_cid = target_cid
+            self.cmd_client.execute(f"sendtextmessage targetmode=2 msg={esc}")
         except Exception as e:
             print(f"[TS3] Error sending channel message: {e}")
 
@@ -544,7 +765,6 @@ class TS3Bridge:
         try:
             clean_q = re.sub(r'^(ym:|play\s+|p\s+)', '', query, flags=re.I).strip()
             search = self.ym_client.search(clean_q)
-            # If artist was matched as top result, pick their top hit
             if search and search.best and search.best.type == 'artist':
                 try:
                     pop = search.best.result.get_tracks()
@@ -561,6 +781,7 @@ class TS3Bridge:
 
     def play_item(self, bot, item, notify=True, is_loop=False):
         bid = bot.bot_id
+        print(f"[PLAY] play_item called for Bot #{bid}: {item.get('title')}")
         if item.get("source") == "radio":
             url = item["stream_url"]
             StreamHandler.current_streams[bid] = url
@@ -576,7 +797,9 @@ class TS3Bridge:
                 self.send_channel_msg(f"📻 Запуск радио: {item['title']}", cid=bot.cid)
             return True
 
+        print(f"[PLAY] Resolving direct download link for Bot #{bid}...")
         direct_link = self.get_track_direct_link(item)
+        print(f"[PLAY] Direct link result: {bool(direct_link)}")
         if not direct_link:
             self.send_channel_msg(f"⚠️ Не удалось получить аудиопоток: {item['title']}", cid=bot.cid)
             with self.lock:
@@ -596,7 +819,9 @@ class TS3Bridge:
         bot.is_radio = False
         bot.play_started_at = time.time()
         stream_url = f"http://127.0.0.1:{self.stream_port}/stream/{bid}/{int(time.time())}.mp3"
+        print(f"[PLAY] Sending !play {stream_url} to TS3AudioBot...")
         self.command_bot_silent(f"!play {stream_url}", bot_id=bid)
+        print(f"[PLAY] Sent !play successfully.")
         if notify:
             if not is_loop:
                 self.send_channel_msg(f"▶ Играет Яндекс.Музыка: {item['title']}", cid=bot.cid)
@@ -608,16 +833,20 @@ class TS3Bridge:
             urllib.request.urlopen(url, timeout=2)
         except Exception:
             pass
+        cid_to_remove = None
         with self.lock:
             if bot_id in self.bots:
+                cid_to_remove = self.bots[bot_id].cid
                 del self.bots[bot_id]
             StreamHandler.current_streams.pop(bot_id, None)
             StreamHandler.current_titles.pop(bot_id, None)
             StreamHandler.current_covers.pop(bot_id, None)
 
+        if cid_to_remove and cid_to_remove != 1:
+            self.remove_chan_listener(cid_to_remove)
+
     def handle_bot_add(self, user_cid, invoker_name):
         with self.lock:
-            # Check if there is already a bot in this channel
             for bot in self.bots.values():
                 if bot.cid == user_cid:
                     self.send_channel_msg(f"ℹ️ В вашем канале уже находится бот {bot.name}.", cid=user_cid)
@@ -639,7 +868,6 @@ class TS3Bridge:
 
             bot_name = f"🎵 VibeSpeak #{next_num}"
 
-        # Connect new bot via TS3AudioBot API
         try:
             url = f"http://127.0.0.1:58913/api/bot/use/0/(/bot/connect/to/{self.host})"
             with urllib.request.urlopen(url, timeout=3) as resp:
@@ -650,14 +878,12 @@ class TS3Bridge:
             return
 
         time.sleep(0.8)
-        # Rename new bot
         name_enc = urllib.parse.quote(bot_name, safe='')
         try:
             urllib.request.urlopen(f"http://127.0.0.1:58913/api/bot/use/{new_id}/(/bot/name/{name_enc})", timeout=2)
         except Exception:
             pass
 
-        # Locate new bot client and move to user_cid
         new_clid = None
         new_cldbid = None
         for _ in range(6):
@@ -672,23 +898,17 @@ class TS3Bridge:
                 break
 
         if new_clid:
-            try:
-                self.tn.write(f"clientmove clid={new_clid} cid={user_cid}\n".encode('utf-8'))
-                if new_cldbid:
-                    self.tn.write(f"clientaddperm cldbid={new_cldbid} permsid=b_client_channel_textmessage_send permvalue=0 permnegated=1 permskip=1\n".encode('utf-8'))
-            except Exception:
-                pass
-
-        try:
-            self.tn.write(f"servernotifyregister event=textchannel id={user_cid}\n".encode('utf-8'))
-        except Exception:
-            pass
+            self.cmd_client.execute(f"clientmove clid={new_clid} cid={user_cid}")
+            if new_cldbid:
+                self.cmd_client.execute(f"clientaddperm cldbid={new_cldbid} permsid=b_client_channel_textmessage_send permvalue=0 permnegated=1 permskip=1")
 
         new_bot = BotInstance(bot_id=new_id, name=bot_name, is_main=False, cid=user_cid)
         new_bot.clid = new_clid
         new_bot.cldbid = new_cldbid
         with self.lock:
             self.bots[new_id] = new_bot
+
+        self.ensure_chan_listener(user_cid)
 
         self.send_channel_msg(
             f"🤖 Временный бот {bot_name} прибыл в канал!\n"
@@ -737,20 +957,21 @@ class TS3Bridge:
                 bots_to_remove = []
 
                 with self.lock:
+                    bot_clids = {b.clid for b in self.bots.values() if b.clid}
                     for bid, bot in list(self.bots.items()):
                         if bot.is_main:
-                            continue # Main bot never leaves!
+                            continue
 
-                        # Count human clients in bot.cid (type == 0 and not our bots)
+                        # Count human clients in bot.cid (type == 0 and not our bot clids)
                         human_count = sum(
-                            1 for info in clients.values()
-                            if info.get("cid") == bot.cid and info.get("type") == 0 and not any(k in info.get("nick", "") for k in ["VibeSpeak", "MusicBot", "YandexBridge"])
+                            1 for clid, info in clients.items()
+                            if info.get("cid") == bot.cid and info.get("type") == 0 and clid not in bot_clids
                         )
 
                         if human_count == 0:
                             if bot.empty_since is None:
                                 bot.empty_since = time.time()
-                            elif time.time() - bot.empty_since >= 20.0: # 20 seconds empty
+                            elif time.time() - bot.empty_since >= 20.0:
                                 bots_to_remove.append(bot)
                         else:
                             bot.empty_since = None
@@ -767,16 +988,13 @@ class TS3Bridge:
                     if not bot.current_item or bot.is_radio:
                         continue
 
-                    # Grace period of 3.5s after play started
                     if time.time() - bot.play_started_at < 3.5:
                         continue
 
                     is_active, data = self.is_bot_active(bot.bot_id)
                     if is_active:
-                        # Player is active (playing or paused)
                         continue
 
-                    # Track completed on this bot (HTTP 422)
                     print(f"[QUEUE] Bot {bot.name} (ID {bot.bot_id}) finished track: {bot.current_item.get('title')}")
                     with self.lock:
                         if bot.is_looping and bot.current_item:
@@ -820,7 +1038,6 @@ class TS3Bridge:
             if sub in ["list", "список", "боты"]:
                 self.handle_bot_list(invoker_cid)
                 return
-            # Default bot command info
             self.send_channel_msg(
                 "🤖 Управление ботами VibeSpeak:\n"
                 "• !bot add — добавить временного бота в ваш канал\n"
@@ -850,207 +1067,159 @@ class TS3Bridge:
             )
             return
 
-        # 3. RADIO
-        if cmd in ["radio", "радио"]:
-            if not arg or arg in ["list", "список"]:
-                self.send_channel_msg(RADIO_LIST_TEXT, cid=invoker_cid)
-                return
-            if arg in RADIO_STATIONS:
-                name, url = RADIO_STATIONS[arg]
-                with self.lock:
-                    target_bot.is_radio = True
-                    item = {
-                        "title": f"{name}",
-                        "stream_url": url,
-                        "cover_url": f"http://127.0.0.1:{self.stream_port}/ym_logo.png",
-                        "source": "radio"
-                    }
-                    self.play_item(target_bot, item, notify=True)
-                return
-            else:
-                self.send_channel_msg(f"Неверный номер станции: {arg}. Доступны номера 1..11. Введите !radio для списка.", cid=invoker_cid)
-                return
-
-        if cmd in ["r"] and arg in RADIO_STATIONS:
-            name, url = RADIO_STATIONS[arg]
-            with self.lock:
-                item = {
-                    "title": f"{name}",
-                    "stream_url": url,
-                    "cover_url": f"http://127.0.0.1:{self.stream_port}/ym_logo.png",
-                    "source": "radio"
-                }
-                self.play_item(target_bot, item, notify=True)
-            return
-
-        if cmd in ["lofi", "лофи"]:
-            name, url = RADIO_STATIONS["1"]
-            with self.lock:
-                item = {
-                    "title": f"{name}",
-                    "stream_url": url,
-                    "cover_url": f"http://127.0.0.1:{self.stream_port}/ym_logo.png",
-                    "source": "radio"
-                }
-                self.play_item(target_bot, item, notify=True)
-            return
-
-        # 4. PLAY / P (Yandex Music with Queue support)
-        if cmd in ["play", "p", "включи", "играть", "ym"]:
+        # 3. RADIO COMMANDS
+        if cmd in ["radio", "r", "радио"]:
             if not arg:
-                self.send_channel_msg("Укажите название песни или ссылку Яндекс.Музыки (например: !play Король и Шут)", cid=invoker_cid)
+                self.send_channel_msg(RADIO_HELP_TEXT, cid=invoker_cid)
+                return
+            choice = arg.strip()
+            if choice in RADIO_STATIONS:
+                r_name, r_url = RADIO_STATIONS[choice]
+                item = {
+                    "title": f"Радио #{choice} — {r_name}",
+                    "stream_url": r_url,
+                    "cover_url": f"http://127.0.0.1:{self.stream_port}/ym_logo.png",
+                    "source": "radio"
+                }
+                with self.lock:
+                    target_bot.queue.clear()
+                    target_bot.is_looping = False
+                self.play_item(target_bot, item, notify=True)
+            else:
+                self.send_channel_msg("Неверный номер станции. Напишите: !radio (доступны станции от 1 до 11)", cid=invoker_cid)
+            return
+
+        if cmd in ["lofi", "lo-fi", "лофи"]:
+            r_name, r_url = RADIO_STATIONS["1"]
+            item = {
+                "title": f"Радио #1 — {r_name} (24/7)",
+                "stream_url": r_url,
+                "cover_url": f"http://127.0.0.1:{self.stream_port}/ym_logo.png",
+                "source": "radio"
+            }
+            with self.lock:
+                target_bot.queue.clear()
+                target_bot.is_looping = False
+            self.play_item(target_bot, item, notify=True)
+            return
+
+        # 4. PLAY COMMAND (YANDEX MUSIC)
+        if cmd in ["play", "p", "плей"]:
+            if not arg:
+                self.send_channel_msg("Используйте: !play <название или ссылка> (например: !play Король и Шут Лесник)", cid=invoker_cid)
                 return
 
-            lower_arg = arg.lower()
-            if any(b in lower_arg for b in ["youtube.com", "youtu.be", "soundcloud.com"]):
-                self.send_channel_msg("❌ Сервисы YouTube и SoundCloud отключены. Поддерживается только Яндекс.Музыка и Радио.", cid=invoker_cid)
-                return
-
-            if any(b in lower_arg for b in ["vk.com", "vk.ru"]):
-                self.send_channel_msg("❌ ВКонтакте не поддерживается. Напишите название трека через !play <название>, чтобы включить его из Яндекс.Музыки.", cid=invoker_cid)
-                return
-
-            items, err_or_name = self.resolve_yandex(arg)
+            print(f"[YM] Searching: {arg!r}...")
+            items, err = self.resolve_yandex(arg)
+            print(f"[YM] Found: {len(items) if items else 0} items. Error: {err}")
             if not items:
-                self.send_channel_msg(f"❌ {err_or_name}", cid=invoker_cid)
+                self.send_channel_msg(f"❌ {err or 'Трек не найден'}", cid=invoker_cid)
                 return
 
             with self.lock:
-                is_active, _ = self.is_bot_active(target_bot.bot_id)
-                is_currently_playing = is_active and target_bot.current_item is not None and not target_bot.is_radio
-
-                if len(items) > 1:
-                    # Multiple tracks from Album or Playlist
-                    if is_currently_playing:
-                        target_bot.queue.extend(items)
-                        self.send_channel_msg(f"➕ Добавлен {err_or_name} ({len(items)} треков в очередь).", cid=invoker_cid)
+                if target_bot.current_item is not None:
+                    target_bot.queue.extend(items)
+                    if len(items) == 1:
+                        self.send_channel_msg(f"➕ Добавлено в очередь (#{len(target_bot.queue)}): {items[0]['title']}", cid=invoker_cid)
                     else:
-                        first = items[0]
-                        rest = items[1:]
-                        target_bot.queue.extend(rest)
-                        self.send_channel_msg(f"💿 Запуск: {err_or_name} (всего {len(items)} треков).", cid=invoker_cid)
-                        self.play_item(target_bot, first, notify=True)
+                        self.send_channel_msg(f"➕ Добавлено в очередь: {len(items)} трек(ов) ({err or 'альбом/плейлист'}).", cid=invoker_cid)
                 else:
-                    # Single track
-                    track_item = items[0]
-                    if is_currently_playing:
-                        target_bot.queue.append(track_item)
-                        pos = len(target_bot.queue)
-                        self.send_channel_msg(f"➕ Добавлено в очередь (#{pos}): {track_item['title']}", cid=invoker_cid)
-                    else:
-                        # Play immediately
-                        self.play_item(target_bot, track_item, notify=True)
+                    first_item = items[0]
+                    if len(items) > 1:
+                        target_bot.queue.extend(items[1:])
+                        self.send_channel_msg(f"➕ В очереди {len(items)-1} трек(ов) ({err or 'альбом/плейлист'}).", cid=invoker_cid)
+                    self.play_item(target_bot, first_item, notify=True)
             return
 
-        # 5. QUEUE / Q
+        # 5. QUEUE COMMAND (!queue, !q, !очередь)
         if cmd in ["queue", "q", "очередь"]:
             with self.lock:
-                is_active, data = self.is_bot_active(target_bot.bot_id)
-                if not target_bot.current_item or not is_active:
-                    if target_bot.queue:
-                        msg = f"🎵 В очереди ожидают ({len(target_bot.queue)} треков):\n"
-                        for i, it in enumerate(target_bot.queue[:10], 1):
-                            msg += f"{i}. {it['title']}\n"
-                        if len(target_bot.queue) > 10:
-                            msg += f"... и ещё {len(target_bot.queue) - 10} трек(ов).\n"
-                        msg += "Включите первый трек: !skip или !play"
-                        self.send_channel_msg(msg.strip(), cid=invoker_cid)
-                    else:
-                        self.send_channel_msg("🎵 Очередь пуста. Включите музыку: !play <название> или !radio 1..11", cid=invoker_cid)
+                if not target_bot.current_item and not target_bot.queue:
+                    self.send_channel_msg("Очередь воспроизведения пуста. Добавьте трек: !play <название>", cid=invoker_cid)
                     return
 
-                time_str = ""
-                paused_str = ""
-                if data:
-                    pos = int(data.get("Position", 0))
-                    length = int(data.get("Length", 0))
-                    if data.get("Paused", False):
-                        paused_str = " (на паузе)"
-                    m1, s1 = divmod(pos, 60)
-                    if length > 0:
-                        m2, s2 = divmod(length, 60)
-                        time_str = f" [{m1:02d}:{s1:02d} / {m2:02d}:{s2:02d}]"
-                    elif pos > 0:
-                        time_str = f" [{m1:02d}:{s1:02d}]"
+                msg = f"🎵 ОЧЕРЕДЬ ВОСПРОИЗВЕДЕНИЯ ({1 + len(target_bot.queue)} трек(ов)):\n"
+                if target_bot.current_item:
+                    time_str = ""
+                    is_active, data = self.is_bot_active(target_bot.bot_id)
+                    if is_active and data:
+                        pos = int(data.get("Position", 0))
+                        length = int(data.get("Length", 0))
+                        m1, s1 = divmod(pos, 60)
+                        if length > 0:
+                            m2, s2 = divmod(length, 60)
+                            time_str = f" [{m1:02d}:{s1:02d} / {m2:02d}:{s2:02d}]"
+                        elif pos > 0:
+                            time_str = f" [{m1:02d}:{s1:02d}]"
+                    loop_str = " (Повтор: ВКЛ)" if target_bot.is_looping else " (Повтор: ВЫКЛ)"
+                    msg += f"▶ Сейчас играет: {target_bot.current_item['title']}{time_str}{loop_str}\n"
 
-                loop_str = "🔁 Повтор: ВКЛ" if target_bot.is_looping else "Повтор: ВЫКЛ"
-                total_count = 1 + len(target_bot.queue)
-                header = f"🎵 ОЧЕРЕДЬ ВОСПРОИЗВЕДЕНИЯ ({total_count} трек(ов)):\n▶ Сейчас играет: {target_bot.current_item['title']}{time_str}{paused_str} ({loop_str})\n"
                 if target_bot.queue:
-                    header += f"\n📋 Следующие в очереди ({len(target_bot.queue)}):\n"
-                    for i, it in enumerate(target_bot.queue[:10], 1):
-                        header += f"{i}. {it['title']}\n"
+                    msg += f"\n📋 Следующие в очереди ({len(target_bot.queue)}):\n"
+                    for idx, q_item in enumerate(target_bot.queue[:10], 1):
+                        msg += f"{idx}. {q_item['title']}\n"
                     if len(target_bot.queue) > 10:
-                        header += f"... и ещё {len(target_bot.queue) - 10} трек(ов)\n"
+                        msg += f"... и еще {len(target_bot.queue) - 10} трек(ов)\n"
                 else:
-                    header += "\n📋 Очередь пуста. Добавьте следующий трек: !play <название>"
+                    msg += "\n📋 Больше треков в очереди нет.\n"
 
-                self.send_channel_msg(header.strip(), cid=invoker_cid)
+                msg += "\nУправление: !skip (пропуск) | !loop (повтор) | !clear (очистить)"
+            self.send_channel_msg(msg.strip(), cid=invoker_cid)
             return
 
-        # 6. LOOP / REPEAT
-        if cmd in ["loop", "repeat", "повтор", "зациклить"]:
+        # 6. LOOP COMMAND (!loop, !repeat, !повтор)
+        if cmd in ["loop", "repeat", "повтор"]:
             with self.lock:
-                if arg.lower() in ["on", "1", "вкл", "true"]:
-                    target_bot.is_looping = True
-                elif arg.lower() in ["off", "0", "выкл", "false"]:
-                    target_bot.is_looping = False
-                else:
-                    target_bot.is_looping = not target_bot.is_looping
-
+                target_bot.is_looping = not target_bot.is_looping
                 if target_bot.is_looping:
                     self.send_channel_msg("🔁 Зацикливание включено: текущий трек будет повторяться.", cid=invoker_cid)
                 else:
                     self.send_channel_msg("➡️ Зацикливание выключено: треки будут играть по очереди.", cid=invoker_cid)
             return
 
-        # 7. SKIP / NEXT
-        if cmd in ["skip", "next", "скип", "следующий", "след", "n"]:
+        # 7. SKIP / NEXT COMMAND (!skip, !next, !скип)
+        if cmd in ["skip", "next", "скип", "дальше"]:
             with self.lock:
-                self.command_bot_silent("!stop", bot_id=target_bot.bot_id)
+                target_bot.is_looping = False
                 if target_bot.queue:
                     next_item = target_bot.queue.pop(0)
                     self.send_channel_msg("⏭️ Трек пропущен.", cid=invoker_cid)
                     self.play_item(target_bot, next_item, notify=True)
                 else:
+                    self.send_channel_msg("⏭️ Очередь пуста. Воспроизведение остановлено.", cid=invoker_cid)
+                    self.command_bot_silent("!stop", bot_id=target_bot.bot_id)
                     target_bot.current_item = None
                     self.clear_bot_avatar(target_bot.bot_id)
-                    self.send_channel_msg("⏭️ Трек пропущен. Очередь пуста.", cid=invoker_cid)
             return
 
-        # 8. REMOVE / DEL
-        if cmd in ["remove", "del", "delete", "rm", "удалить"]:
-            if not arg:
-                self.send_channel_msg("Укажите номер трека для удаления (например: !remove 2). Список очереди: !queue", cid=invoker_cid)
+        # 8. REMOVE TRACK FROM QUEUE (!remove <number>)
+        if cmd in ["remove", "rem", "del", "delete", "удалить"]:
+            if not arg or not arg.strip().isdigit():
+                self.send_channel_msg("Укажите номер трека в очереди: !remove <номер> (например: !remove 2)", cid=invoker_cid)
                 return
-            try:
-                idx = int(re.sub(r'[^0-9]', '', arg))
-                with self.lock:
-                    if 1 <= idx <= len(target_bot.queue):
-                        removed = target_bot.queue.pop(idx - 1)
-                        self.send_channel_msg(f"🗑️ Удален из очереди (#{idx}): {removed['title']}", cid=invoker_cid)
-                    else:
-                        self.send_channel_msg(f"Номер вне диапазона. В очереди {len(target_bot.queue)} треков. Проверьте: !queue", cid=invoker_cid)
-            except Exception:
-                self.send_channel_msg("Используйте: !remove <номер> (например: !remove 1)", cid=invoker_cid)
+            num = int(arg.strip())
+            with self.lock:
+                if 1 <= num <= len(target_bot.queue):
+                    removed = target_bot.queue.pop(num - 1)
+                    self.send_channel_msg(f"🗑️ Удален из очереди (#{num}): {removed['title']}", cid=invoker_cid)
+                else:
+                    self.send_channel_msg(f"Трек #{num} не найден в очереди. Проверьте список: !queue", cid=invoker_cid)
             return
 
-        # 9. CLEAR
+        # 9. CLEAR QUEUE (!clear)
         if cmd in ["clear", "очистить"]:
             with self.lock:
-                count = len(target_bot.queue)
                 target_bot.queue.clear()
-                self.send_channel_msg(f"🗑️ Очередь очищена (удалено треков: {count}). Текущий трек продолжает играть.", cid=invoker_cid)
+                self.send_channel_msg("🗑️ Очередь треков очищена (текущий трек продолжит играть).", cid=invoker_cid)
             return
 
-        # 10. STOP / S
+        # 10. STOP COMMAND
         if cmd in ["stop", "s", "стоп"]:
             with self.lock:
                 target_bot.queue.clear()
                 target_bot.current_item = None
+                target_bot.is_looping = False
                 target_bot.is_radio = False
-                StreamHandler.current_streams.pop(target_bot.bot_id, None)
-                StreamHandler.current_titles.pop(target_bot.bot_id, None)
                 self.command_bot_silent("!stop", bot_id=target_bot.bot_id)
                 self.clear_bot_avatar(target_bot.bot_id)
                 self.send_channel_msg("⏹️ Воспроизведение остановлено, очередь очищена.", cid=invoker_cid)
@@ -1120,56 +1289,68 @@ class TS3Bridge:
         sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
         start_stream_server(host=STREAM_HOST, port=self.stream_port)
 
-        # Start playback & lifecycle monitoring thread
         t_mon = threading.Thread(target=self.playback_and_lifecycle_loop, daemon=True)
         t_mon.start()
 
         self.init_ym()
-        self.connect()
+        self.connect_events()
 
-        buffer = ""
+        last_ping = time.time()
+        buf = ""
         while True:
             try:
-                time.sleep(0.08)
-                chunk = self.tn.read_very_eager().decode('utf-8', errors='ignore')
+                chunk = self.event_sock.recv(4096).decode('utf-8', errors='ignore')
                 if not chunk:
+                    print("[BRIDGE] Socket connection closed, reconnecting...")
+                    time.sleep(2)
+                    self.connect_events()
                     continue
-                buffer += chunk
-                while '\n' in buffer:
-                    line, buffer = buffer.split('\n', 1)
+                buf += chunk
+                while '\n' in buf:
+                    line, buf = buf.split('\n', 1)
                     line = line.strip()
-                    if not line:
+                    if not line or line.startswith("error id=") or "version=" in line:
                         continue
+
                     if line.startswith('notifyclientmoved') or line.startswith('notifyclientleftview') or line.startswith('notifycliententerview'):
                         self.sync_channels_and_bots()
                         continue
+
                     if not line.startswith('notifytextmessage'):
                         continue
+
                     parts = line.split(' ')
+                    targetmode = next((int(p[11:]) for p in parts if p.startswith('targetmode=') and p[11:].isdigit()), 2)
                     msg_raw = next((p[4:] for p in parts if p.startswith('msg=')), '')
                     invoker_raw = next((p[12:] for p in parts if p.startswith('invokername=')), '')
                     invoker_clid_str = next((p[10:] for p in parts if p.startswith('invokerid=')), '0')
                     msg = ts3_unescape(msg_raw)
                     invoker = ts3_unescape(invoker_raw)
 
-                    # Ignore our own messages, ServerQuery, or any VibeSpeak/MusicBot
-                    if any(k in invoker for k in ['VibeSpeak', 'MusicBot', 'YandexBridge', 'serveradmin']):
+                    if any(k in invoker for k in ['VibeSpeak', 'MusicBot', 'YandexBridge', 'YB_', 'serveradmin']):
                         continue
 
-                    # Lookup which channel the invoker is in
                     invoker_clid = int(invoker_clid_str) if invoker_clid_str.isdigit() else 0
                     clients = self.query_clients()
                     invoker_cid = clients.get(invoker_clid, {}).get("cid", 1)
 
                     self.handle_msg(msg, invoker, invoker_cid)
-            except (socket.error, EOFError, Exception) as e:
+            except (socket.timeout, TimeoutError):
+                if time.time() - last_ping > 60:
+                    try:
+                        self.event_sock.sendall(b"version\n")
+                        last_ping = time.time()
+                    except Exception:
+                        pass
+                continue
+            except Exception as e:
                 print(f"[BRIDGE] Reconnecting due to: {e}")
                 time.sleep(2)
                 try:
-                    self.connect()
+                    self.connect_events()
                 except Exception:
                     pass
 
 if __name__ == '__main__':
-    bridge = TS3Bridge(password="DDdRAu1O")
+    bridge = TS3Bridge()
     bridge.run()
