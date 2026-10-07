@@ -17,3 +17,8 @@ server/*.log
 server/files/
 __pycache__/
 *.pyc
+
+# Private tokens & credentials
+*yandex_token.txt
+yandex_token.txt
+
