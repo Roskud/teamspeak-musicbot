@@ -1,5 +1,5 @@
 [Unit]
-Description=TeamSpeak 6 MusicBot (TS3AudioBot with Yandex Music & Radio)
+Description=VibeSpeak - TeamSpeak 6 MusicBot (TS3AudioBot with Yandex Music & Radio)
 After=network.target network-online.target
 Wants=network-online.target
 

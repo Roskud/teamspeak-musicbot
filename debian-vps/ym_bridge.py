@@ -292,7 +292,7 @@ class TS3Bridge:
                 c_cid = next((p[4:] for p in parts if p.startswith('cid=')), '')
                 c_clid = next((p[5:] for p in parts if p.startswith('clid=')), '')
                 c_cldbid = next((p[19:] for p in parts if p.startswith('client_database_id=')), '')
-                if 'MusicBot' in c_nick:
+                if 'VibeSpeak' in c_nick or 'MusicBot' in c_nick:
                     if c_cid:
                         bot_cid = int(c_cid)
                     if c_cldbid:
@@ -300,13 +300,13 @@ class TS3Bridge:
                 if 'YandexBridge' in c_nick and c_clid:
                     self.my_clid = int(c_clid)
 
-            # Silencing MusicBot from sending channel text messages (prevent duplicate errors)
+            # Silencing bot from sending channel text messages (prevent duplicate errors)
             if bot_cldbid and getattr(self, '_silenced_cldbid', None) != bot_cldbid:
                 self.tn.write(f"clientaddperm cldbid={bot_cldbid} permsid=b_client_channel_textmessage_send permvalue=0 permnegated=1 permskip=1\n".encode('utf-8'))
                 self._silenced_cldbid = bot_cldbid
 
             if bot_cid and bot_cid != self.current_bot_cid:
-                print(f"[TS3] MusicBot is in voice channel {bot_cid}. Following...")
+                print(f"[TS3] VibeSpeak is in voice channel {bot_cid}. Following...")
                 self.current_bot_cid = bot_cid
                 if self.my_clid:
                     self.tn.write(f"clientmove clid={self.my_clid} cid={bot_cid}\n".encode('utf-8'))
@@ -905,8 +905,8 @@ class TS3Bridge:
                     msg = ts3_unescape(msg_raw)
                     invoker = ts3_unescape(invoker_raw)
 
-                    # Ignore our own messages or serveradmin query or MusicBot
-                    if 'MusicBot' in invoker or invoker in ["YandexBridge", "serveradmin"]:
+                    # Ignore our own messages or serveradmin query or VibeSpeak/MusicBot
+                    if any(k in invoker for k in ['VibeSpeak', 'MusicBot']) or invoker in ["YandexBridge", "serveradmin"]:
                         continue
 
                     self.handle_msg(msg, invoker)

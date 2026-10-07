@@ -1,9 +1,9 @@
 @echo off
-title TeamSpeak 6 MusicBot (Yandex.Music & Radio)
+title VibeSpeak - TeamSpeak 6 MusicBot (Yandex.Music & Radio)
 cd /d "%~dp0bot"
 
 echo ============================================================
-echo   Запуск TeamSpeak 6 MusicBot (Яндекс.Музыка и Радио)
+echo   Запуск VibeSpeak (Яндекс.Музыка и Радио)
 echo ============================================================
 
 if not exist "ffmpeg.exe" (

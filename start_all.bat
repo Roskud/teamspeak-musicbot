@@ -1,7 +1,7 @@
 @echo off
-title Start TeamSpeak 6 Server and MusicBot
+title Start TeamSpeak 6 Server and VibeSpeak
 echo ============================================================
-echo   Запуск локального TeamSpeak сервера и Музыкального Бота
+echo   Запуск локального TeamSpeak сервера и VibeSpeak
 echo ============================================================
 
 cd /d "%~dp0"
@@ -11,8 +11,8 @@ start "" call start_server.bat
 echo Ожидание инициализации сервера (4 сек)...
 timeout /t 4 /nobreak >nul
 
-echo 2. Запуск Музыкального Бота...
-start "MusicBot Console" call start_bot.bat
+echo 2. Запуск VibeSpeak...
+start "VibeSpeak Console" call start_bot.bat
 
 echo.
 echo ============================================================

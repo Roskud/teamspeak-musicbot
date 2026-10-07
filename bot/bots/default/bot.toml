@@ -5,7 +5,7 @@ run = true
 #The address, ip or nickname (and port; default: 9987) of the TeamSpeak3 server
 address = "127.0.0.1"
 #Client nickname when connecting.
-name = "🎵 MusicBot"
+name = "🎵 VibeSpeak"
 #The server password. Leave empty for none.
 server_password = {  }
 #The default channel password. Leave empty for none.
