@@ -565,7 +565,13 @@ class TS3Bridge:
 
     def sync_channels_and_bots(self):
         clients = self.query_clients()
+        if not clients:
+            return
+
+        bots_to_cleanup = []
         with self.lock:
+            matched_bot_ids = set()
+
             for clid, info in clients.items():
                 nick = info.get("nick", "")
                 cid = info.get("cid", 1)
@@ -575,17 +581,70 @@ class TS3Bridge:
                     continue
 
                 # Match bots
-                for bot in self.bots.values():
-                    if (bot.is_main and any(k in nick for k in ["VibeSpeak", "MusicBot"]) and not "#" in nick) or (not bot.is_main and bot.name in nick):
+                for bid, bot in list(self.bots.items()):
+                    is_match = False
+                    if bot.is_main:
+                        if any(k in nick for k in ["VibeSpeak", "MusicBot"]) and "#" not in nick:
+                            is_match = True
+                    else:
+                        if bot.name in nick or (bot.clid and bot.clid == clid):
+                            is_match = True
+
+                    if is_match:
+                        matched_bot_ids.add(bid)
                         bot.clid = clid
                         bot.cldbid = cldbid
-                        bot.cid = cid
+
+                        # If temporary bot is in channel 1 (kicked from channel), schedule cleanup
+                        if not bot.is_main and cid == 1:
+                            print(f"[LIFECYCLE] Temporary bot {bot.name} (ID {bid}) detected in channel 1 (kicked from channel).")
+                            bots_to_cleanup.append(bid)
+                            continue
+
+                        # Check if bot moved to a new channel (Drag & Drop)
+                        if bot.cid != cid:
+                            old_cid = bot.cid
+                            bot.cid = cid
+                            print(f"[MOVE] Bot {bot.name} (ID {bid}) moved: Channel #{old_cid} -> Channel #{cid}")
+
                         # Ensure bot cannot send channel text chat (prevent error spam)
                         if getattr(bot, '_silenced_cldbid', None) != cldbid:
                             self.cmd_client.execute(f"clientaddperm cldbid={cldbid} permsid=b_client_channel_textmessage_send permvalue=0 permnegated=1 permskip=1")
                             bot._silenced_cldbid = cldbid
 
-            # Ensure channel listeners exist for all non-main channels with humans or bots
+            # Check for missing temporary bots (kicked from server / disconnected)
+            for bid, bot in list(self.bots.items()):
+                if not bot.is_main and bid not in matched_bot_ids:
+                    print(f"[LIFECYCLE] Temporary bot {bot.name} (ID {bid}) is no longer on server (kicked/left).")
+                    bots_to_cleanup.append(bid)
+
+            # Update auto-leave empty_since status for surviving temporary bots
+            bot_clids = {b.clid for b in self.bots.values() if b.clid}
+            for bid, bot in self.bots.items():
+                if bot.is_main or bid in bots_to_cleanup:
+                    continue
+                human_count = sum(
+                    1 for clid, info in clients.items()
+                    if info.get("cid") == bot.cid
+                    and info.get("type") == 0
+                    and clid not in bot_clids
+                    and not any(k in info.get("nick", "") for k in ["YandexBridge", "YB_", "serveradmin", "MusicBot", "VibeSpeak"])
+                )
+                if human_count == 0:
+                    if bot.empty_since is None:
+                        bot.empty_since = time.time()
+                        print(f"[AUTO-LEAVE] Channel #{bot.cid} for {bot.name} is empty. 20s countdown started.")
+                else:
+                    if bot.empty_since is not None:
+                        print(f"[AUTO-LEAVE] Channel #{bot.cid} has {human_count} user(s). Countdown canceled for {bot.name}.")
+                    bot.empty_since = None
+
+        # Clean up any kicked or channel-1 bots outside lock
+        for bid in bots_to_cleanup:
+            self.cleanup_bot(bid)
+
+        # Synchronize channel listeners for active channels
+        with self.lock:
             active_cids = set()
             for bot in self.bots.values():
                 if not bot.is_main and bot.cid and bot.cid != 1:
@@ -593,18 +652,18 @@ class TS3Bridge:
             for clid, info in clients.items():
                 cid = info.get("cid", 1)
                 ctype = info.get("type", 0)
-                # Humans (type == 0) in non-main channels
-                if ctype == 0 and cid != 1:
+                nick = info.get("nick", "")
+                if ctype == 0 and cid != 1 and not any(k in nick for k in ["YandexBridge", "YB_", "serveradmin", "MusicBot", "VibeSpeak"]):
                     active_cids.add(cid)
 
-            for cid in active_cids:
-                self.ensure_chan_listener(cid)
+            cids_to_add = [cid for cid in active_cids if cid not in self.chan_listeners or not self.chan_listeners[cid].running]
+            cids_to_remove = [cid for cid in self.chan_listeners.keys() if cid not in active_cids]
 
-            # Cleanup listeners for channels that no longer have humans or bots
-            current_listener_cids = list(self.chan_listeners.keys())
-            for cid in current_listener_cids:
-                if cid not in active_cids:
-                    self.remove_chan_listener(cid)
+        for cid in cids_to_add:
+            self.ensure_chan_listener(cid)
+
+        for cid in cids_to_remove:
+            self.remove_chan_listener(cid)
 
     def ensure_chan_listener(self, cid):
         if cid == 1:
@@ -991,23 +1050,61 @@ class TS3Bridge:
                 self.send_channel_msg(f"▶ Играет Яндекс.Музыка: {item['title']}", cid=bot.cid)
         return True
 
-    def disconnect_bot(self, bot_id):
-        try:
-            url = f"http://127.0.0.1:58913/api/bot/use/{bot_id}/(/bot/disconnect)"
-            urllib.request.urlopen(url, timeout=2)
-        except Exception:
-            pass
+    def cleanup_bot(self, bot_id):
+        """Completely cleanup and remove a temporary bot from memory, TS3AudioBot, and TS3."""
+        if bot_id == 0:
+            return  # Never cleanup the main 24/7 bot
+
+        bot = None
         cid_to_remove = None
         with self.lock:
-            if bot_id in self.bots:
-                cid_to_remove = self.bots[bot_id].cid
-                del self.bots[bot_id]
+            bot = self.bots.pop(bot_id, None)
+            if not bot:
+                StreamHandler.current_streams.pop(bot_id, None)
+                StreamHandler.current_titles.pop(bot_id, None)
+                StreamHandler.current_covers.pop(bot_id, None)
+                return
+
+            cid_to_remove = bot.cid
+            bot.queue.clear()
+            bot.current_item = None
+            bot.is_looping = False
+            bot.is_radio = False
+            bot.empty_since = None
             StreamHandler.current_streams.pop(bot_id, None)
             StreamHandler.current_titles.pop(bot_id, None)
             StreamHandler.current_covers.pop(bot_id, None)
 
+        print(f"[CLEANUP] Fully resetting temporary bot #{bot_id} ({bot.name}) from channel #{cid_to_remove}...")
+
+        # 1. Clear avatar and stop playback on TS3AudioBot
+        try:
+            self.clear_bot_avatar(bot_id)
+        except Exception:
+            pass
+        try:
+            self.command_bot_silent("!stop", bot_id=bot_id)
+        except Exception:
+            pass
+
+        # 2. Tell TS3AudioBot to disconnect this bot
+        try:
+            url = f"http://127.0.0.1:58913/api/bot/use/{bot_id}/(/bot/disconnect)"
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                pass
+        except Exception:
+            pass
+
+        # 3. Clean up channel listener if no other bots remain in that channel
         if cid_to_remove and cid_to_remove != 1:
-            self.remove_chan_listener(cid_to_remove)
+            with self.lock:
+                other_bot = any(b.cid == cid_to_remove for b in self.bots.values())
+            if not other_bot:
+                self.remove_chan_listener(cid_to_remove)
+
+    def disconnect_bot(self, bot_id):
+        self.cleanup_bot(bot_id)
 
     def handle_bot_add(self, user_cid, invoker_name, invoker_clid=None):
         with self.lock:
@@ -1070,10 +1167,17 @@ class TS3Bridge:
             if new_clid:
                 break
 
-        if new_clid:
-            self.cmd_client.execute(f"clientmove clid={new_clid} cid={user_cid}")
-            if new_cldbid:
-                self.cmd_client.execute(f"clientaddperm cldbid={new_cldbid} permsid=b_client_channel_textmessage_send permvalue=0 permnegated=1 permskip=1")
+        if not new_clid:
+            err = f"❌ Не удалось обнаружить подключение бота {bot_name} на сервере."
+            self.send_channel_msg(err, cid=user_cid)
+            if invoker_clid:
+                self.send_pm_msg(invoker_clid, err)
+            self.cleanup_bot(new_id)
+            return
+
+        self.cmd_client.execute(f"clientmove clid={new_clid} cid={user_cid}")
+        if new_cldbid:
+            self.cmd_client.execute(f"clientaddperm cldbid={new_cldbid} permsid=b_client_channel_textmessage_send permvalue=0 permnegated=1 permskip=1")
 
         new_bot = BotInstance(bot_id=new_id, name=bot_name, is_main=False, cid=user_cid)
         new_bot.clid = new_clid
@@ -1138,35 +1242,23 @@ class TS3Bridge:
         while True:
             try:
                 time.sleep(1.5)
-                # 1. Channel empty & auto-leave check for temporary bots
-                clients = self.query_clients()
-                bots_to_remove = []
+                # 1. Sync channels and bot states (handles missing bots, moves, listeners, empty timers)
+                self.sync_channels_and_bots()
 
+                # 2. Channel empty & auto-leave check for temporary bots (20s timeout)
+                bots_to_leave = []
                 with self.lock:
-                    bot_clids = {b.clid for b in self.bots.values() if b.clid}
                     for bid, bot in list(self.bots.items()):
-                        if bot.is_main:
-                            continue
+                        if not bot.is_main and bot.empty_since is not None:
+                            if time.time() - bot.empty_since >= 20.0:
+                                bots_to_leave.append(bid)
 
-                        # Count human clients in bot.cid (type == 0 and not our bot clids)
-                        human_count = sum(
-                            1 for clid, info in clients.items()
-                            if info.get("cid") == bot.cid and info.get("type") == 0 and clid not in bot_clids
-                        )
+                for bid in bots_to_leave:
+                    bot_name = self.bots[bid].name if bid in self.bots else f"#{bid}"
+                    print(f"[AUTO-LEAVE] Channel empty timeout (20s) reached. Disconnecting temporary bot {bot_name}...")
+                    self.cleanup_bot(bid)
 
-                        if human_count == 0:
-                            if bot.empty_since is None:
-                                bot.empty_since = time.time()
-                            elif time.time() - bot.empty_since >= 20.0:
-                                bots_to_remove.append(bot)
-                        else:
-                            bot.empty_since = None
-
-                for b in bots_to_remove:
-                    print(f"[AUTO-LEAVE] Channel #{b.cid} is empty. Disconnecting temporary bot {b.name}...")
-                    self.disconnect_bot(b.bot_id)
-
-                # 2. Playback progression & loop check for each active bot
+                # 3. Playback progression & loop check for each active bot
                 with self.lock:
                     active_bots = list(self.bots.values())
 
@@ -1526,7 +1618,38 @@ class TS3Bridge:
                     if not line or line.startswith("error id=") or "version=" in line:
                         continue
 
-                    if line.startswith('notifyclientmoved') or line.startswith('notifyclientleftview') or line.startswith('notifycliententerview'):
+                    if line.startswith('notifyclientleftview'):
+                        parts = line.split(' ')
+                        left_clid = next((int(p[5:]) for p in parts if p.startswith('clid=') and p[5:].isdigit()), None)
+                        if left_clid:
+                            with self.lock:
+                                for bid, bot in list(self.bots.items()):
+                                    if not bot.is_main and bot.clid == left_clid:
+                                        print(f"[EVENT] Temporary bot {bot.name} (clid={left_clid}) left the server! Cleaning up...")
+                                        self.cleanup_bot(bid)
+                                        break
+                        self.sync_channels_and_bots()
+                        continue
+
+                    if line.startswith('notifyclientmoved'):
+                        parts = line.split(' ')
+                        moved_clid = next((int(p[5:]) for p in parts if p.startswith('clid=') and p[5:].isdigit()), None)
+                        target_cid = next((int(p[5:]) for p in parts if p.startswith('ctid=') and p[5:].isdigit()), None)
+                        if moved_clid and target_cid is not None:
+                            with self.lock:
+                                for bid, bot in list(self.bots.items()):
+                                    if not bot.is_main and bot.clid == moved_clid:
+                                        if target_cid == 1:
+                                            print(f"[EVENT] Temporary bot {bot.name} kicked/moved to channel 1! Resetting...")
+                                            self.cleanup_bot(bid)
+                                        else:
+                                            print(f"[EVENT] Temporary bot {bot.name} moved to channel #{target_cid}.")
+                                            bot.cid = target_cid
+                                        break
+                        self.sync_channels_and_bots()
+                        continue
+
+                    if line.startswith('notifycliententerview'):
                         self.sync_channels_and_bots()
                         continue
 
