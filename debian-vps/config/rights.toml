@@ -8,7 +8,7 @@
 	"cmd.song"
 ]
 
-# Admin rule for localhost (WebAPI)
+# Admin rule for localhost (WebAPI used by ym_bridge.py)
 [[rule]]
 	ip = [ "127.0.0.1", "::1", "::ffff:127.0.0.1" ]
 	"+" = "*"
@@ -17,34 +17,14 @@
 	isapi = true
 	"+" = "*"
 
-# Admin rule for ServerAdmin groups (group 2: Query Admin, group 6: Server Admin)
-[[rule]]
-	groupid = [ 2, 6 ]
-	"+" = "*"
-
 # Admin rule for ServerQuery client
 [[rule]]
 	useruid = [ "serveradmin" ]
 	"+" = "*"
 
-# Full playback rights in Private Message (used by YandexBridge to control the player quietly)
+# Block built-in TS3AudioBot commands from all chat scopes (Channel, Server, Private).
+# All user commands (!play, !stop, !radio, !queue, !loop, !bot, etc.) are handled by VibeSpeak (ym_bridge.py).
 [[rule]]
-	visibility = [ "Private" ]
-	"+" = [
-		"cmd.play",
-		"cmd.pause",
-		"cmd.stop",
-		"cmd.seek",
-		"cmd.volume",
-		"cmd.next",
-		"cmd.previous",
-		"cmd.bot.avatar.*",
-		"cmd.song",
-		"cmd.clear"
-	]
-
-# Block commands from Channel and Server chat to prevent duplicate bot replies and error messages.
-# All channel user commands (!play, !stop, !radio, etc.) are handled cleanly by YandexBridge.
-[[rule]]
-	visibility = [ "Channel", "Server" ]
+	visibility = [ "Channel", "Server", "Private" ]
 	"-" = "*"
+

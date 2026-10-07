@@ -10,6 +10,7 @@ import urllib.parse
 import urllib.request
 import logging
 import json
+import glob
 
 # Suppress yandex_music verbose logs
 logging.getLogger("yandex_music").setLevel(logging.CRITICAL)
@@ -150,6 +151,64 @@ def find_serveradmin_password():
             except Exception:
                 pass
     return "DDdRAu1O"
+
+def load_config():
+    cfg_paths = [
+        os.path.join(BASE_DIR, "bridge_config.json"),
+        os.path.join(os.path.dirname(BASE_DIR), "bridge_config.json"),
+        os.path.join(BASE_DIR, "config", "bridge_config.json"),
+        os.path.join(os.path.dirname(BASE_DIR), "config", "bridge_config.json"),
+        "/opt/ts3audiobot/bridge_config.json"
+    ]
+    cfg = {}
+    for p in cfg_paths:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                    print(f"[CONFIG] Loaded configuration from {p}")
+                    break
+            except Exception as e:
+                print(f"[CONFIG] Error loading {p}: {e}")
+
+    bot_toml_paths = [
+        os.path.join(BASE_DIR, "bots", "default", "bot.toml"),
+        os.path.join(BASE_DIR, "config", "bots", "default", "bot.toml"),
+        os.path.join(BASE_DIR, "ts3audiobot.toml"),
+        "/opt/ts3audiobot/bots/default/bot.toml",
+        "/opt/ts3audiobot/ts3audiobot.toml"
+    ]
+    toml_address = None
+    for bp in bot_toml_paths:
+        if os.path.exists(bp):
+            try:
+                with open(bp, "r", encoding="utf-8") as f:
+                    for line in f:
+                        m = re.search(r'^\s*address\s*=\s*["\']([^"\']+)["\']', line)
+                        if m and m.group(1).strip():
+                            toml_address = m.group(1).strip()
+                            break
+            except Exception:
+                pass
+        if toml_address:
+            break
+
+    host = os.environ.get("TS3_SERVER_HOST") or cfg.get("host") or toml_address or "127.0.0.1"
+    if ":" in host and not host.startswith("["):
+        host = host.split(":")[0]
+
+    port = int(os.environ.get("TS3_QUERY_PORT") or cfg.get("query_port") or 10011)
+    user = os.environ.get("TS3_QUERY_USER") or cfg.get("query_user") or "serveradmin"
+    password = os.environ.get("TS3_QUERY_PASSWORD") or cfg.get("query_password") or find_serveradmin_password()
+    stream_port = int(os.environ.get("TS3_STREAM_PORT") or cfg.get("stream_port") or STREAM_PORT)
+
+    return {
+        "host": host,
+        "port": port,
+        "user": user,
+        "password": password,
+        "stream_port": stream_port
+    }
 
 RADIO_STATIONS = {
     "1": ("Hunter FM Lo-Fi Hip Hop", "https://live.hunter.fm/lofi_high"),
@@ -335,7 +394,8 @@ class ChanListener:
             self.sock = s
             s.recv(1024)
             auth = f"login {self.user} {self.password}\n" if self.password else f"login {self.user}\n"
-            s.sendall(f"{auth}use sid=1\nclientupdate client_nickname=YB_Chan{self.cid}\nwhoami\n".encode('utf-8'))
+            uniq = int(time.time() * 10) % 10000
+            s.sendall(f"{auth}use sid=1\nclientupdate client_nickname=YB_Chan{self.cid}_{uniq}\nwhoami\n".encode('utf-8'))
             
             buf = ""
             s.settimeout(4.0)
@@ -422,10 +482,20 @@ class TS3Bridge:
             0: BotInstance(bot_id=0, name="🎵 VibeSpeak", is_main=True, cid=1)
         }
         self.chan_listeners = {} # cid (int) -> ChanListener instance
+        self.processed_cmds = {} # dedup_key -> timestamp
 
         # Primary event listener connection
         self.event_sock = None
         self.main_cid = 1
+
+    def send_pm_msg(self, clid, text):
+        if not clid:
+            return
+        try:
+            esc = ts3_escape(text)
+            self.cmd_client.execute(f"sendtextmessage targetmode=1 target={clid} msg={esc}")
+        except Exception as e:
+            print(f"[PM ERROR] {e}")
 
     def get_token(self):
         token = os.environ.get("YANDEX_MUSIC_TOKEN") or os.environ.get("YMTOKEN")
@@ -439,7 +509,8 @@ class TS3Bridge:
         candidates = [
             TOKEN_FILE,
             os.path.join(BASE_DIR, "config", "yandex_token.txt"),
-            os.path.join(os.path.dirname(BASE_DIR), "config", "yandex_token.txt")
+            os.path.join(os.path.dirname(BASE_DIR), "config", "yandex_token.txt"),
+            "/opt/ts3audiobot/yandex_token.txt"
         ]
         for c in candidates:
             if os.path.exists(c):
@@ -514,10 +585,26 @@ class TS3Bridge:
                             self.cmd_client.execute(f"clientaddperm cldbid={cldbid} permsid=b_client_channel_textmessage_send permvalue=0 permnegated=1 permskip=1")
                             bot._silenced_cldbid = cldbid
 
-            # Ensure channel listeners exist for all non-main channels with temporary bots
+            # Ensure channel listeners exist for all non-main channels with humans or bots
+            active_cids = set()
             for bot in self.bots.values():
-                if not bot.is_main and bot.cid:
-                    self.ensure_chan_listener(bot.cid)
+                if not bot.is_main and bot.cid and bot.cid != 1:
+                    active_cids.add(bot.cid)
+            for clid, info in clients.items():
+                cid = info.get("cid", 1)
+                ctype = info.get("type", 0)
+                # Humans (type == 0) in non-main channels
+                if ctype == 0 and cid != 1:
+                    active_cids.add(cid)
+
+            for cid in active_cids:
+                self.ensure_chan_listener(cid)
+
+            # Cleanup listeners for channels that no longer have humans or bots
+            current_listener_cids = list(self.chan_listeners.keys())
+            for cid in current_listener_cids:
+                if cid not in active_cids:
+                    self.remove_chan_listener(cid)
 
     def ensure_chan_listener(self, cid):
         if cid == 1:
@@ -545,13 +632,90 @@ class TS3Bridge:
         parts = raw_line.split(' ')
         msg_raw = next((p[4:] for p in parts if p.startswith('msg=')), '')
         invoker_raw = next((p[12:] for p in parts if p.startswith('invokername=')), '')
+        invoker_clid_str = next((p[10:] for p in parts if p.startswith('invokerid=')), '0')
         msg = ts3_unescape(msg_raw)
         invoker = ts3_unescape(invoker_raw)
 
         if any(k in invoker for k in ['VibeSpeak', 'MusicBot', 'YandexBridge', 'YB_', 'serveradmin']):
             return
 
-        self.handle_msg(msg, invoker, cid)
+        invoker_clid = int(invoker_clid_str) if invoker_clid_str.isdigit() else 0
+        self.handle_msg(msg, invoker, cid, source="channel", invoker_clid=invoker_clid)
+
+    def start_log_watcher(self):
+        t = threading.Thread(target=self._log_watcher_loop, daemon=True)
+        t.start()
+
+    def _log_watcher_loop(self):
+        log_dir_candidates = [
+            os.path.join(BASE_DIR, "logs"),
+            os.path.join(os.path.dirname(BASE_DIR), "logs"),
+            os.path.join(BASE_DIR, "..", "logs"),
+            "/opt/ts3audiobot/logs"
+        ]
+        log_dir = None
+        for ld in log_dir_candidates:
+            if os.path.isdir(ld):
+                log_dir = ld
+                break
+
+        if not log_dir:
+            print("[LOG-WATCHER] No logs directory found.")
+            return
+
+        print(f"[LOG-WATCHER] Monitoring TS3AudioBot logs in {log_dir} for Private Messages...")
+        current_file = None
+        fp = None
+
+        while True:
+            try:
+                log_files = glob.glob(os.path.join(log_dir, "ts3audiobot_*.log"))
+                if not log_files:
+                    time.sleep(1.0)
+                    continue
+                newest = max(log_files, key=os.path.getmtime)
+
+                if newest != current_file:
+                    if fp:
+                        try: fp.close()
+                        except Exception: pass
+                    current_file = newest
+                    fp = open(newest, "r", encoding="utf-8", errors="ignore")
+                    fp.seek(0, os.SEEK_END)
+
+                line = fp.readline()
+                if not line:
+                    time.sleep(0.2)
+                    continue
+
+                m = re.search(r'User\s+([^\r\n]+?)\s+requested:\s*([!/].+)', line)
+                if m:
+                    invoker = m.group(1).strip()
+                    cmd_text = m.group(2).strip()
+
+                    now = time.time()
+                    dedup_key = f"{invoker}:{cmd_text}"
+                    with self.lock:
+                        last_t = self.processed_cmds.get(dedup_key, 0)
+                        if now - last_t < 1.5:
+                            continue  # already handled in channel listener!
+                        self.processed_cmds[dedup_key] = now
+
+                    print(f"[PM/LOG] Intercepted user '{invoker}': {cmd_text}")
+                    clients = self.query_clients()
+                    user_info = None
+                    user_clid = 0
+                    for clid, info in clients.items():
+                        if info.get("nick") == invoker:
+                            user_info = info
+                            user_clid = clid
+                            break
+
+                    user_cid = user_info.get("cid", 1) if user_info else 1
+                    self.handle_msg(cmd_text, invoker, user_cid, source="pm", invoker_clid=user_clid)
+            except Exception as e:
+                time.sleep(1.0)
+
 
     def connect_events(self):
         print(f"[TS3] Connecting Event Stream to {self.host}:{self.port}...")
@@ -845,16 +1009,22 @@ class TS3Bridge:
         if cid_to_remove and cid_to_remove != 1:
             self.remove_chan_listener(cid_to_remove)
 
-    def handle_bot_add(self, user_cid, invoker_name):
+    def handle_bot_add(self, user_cid, invoker_name, invoker_clid=None):
         with self.lock:
             for bot in self.bots.values():
                 if bot.cid == user_cid:
-                    self.send_channel_msg(f"ℹ️ В вашем канале уже находится бот {bot.name}.", cid=user_cid)
+                    msg = f"ℹ️ В вашем канале уже находится бот {bot.name}."
+                    self.send_channel_msg(msg, cid=user_cid)
+                    if invoker_clid:
+                        self.send_pm_msg(invoker_clid, msg)
                     return
 
             temp_bots = [b for b in self.bots.values() if not b.is_main]
             if len(temp_bots) >= MAX_TEMP_BOTS:
-                self.send_channel_msg(f"⚠️ Достигнут лимит временных ботов (максимум {MAX_TEMP_BOTS}). Освободите один из каналов.", cid=user_cid)
+                msg = f"⚠️ Достигнут лимит временных ботов (максимум {MAX_TEMP_BOTS}). Освободите один из каналов."
+                self.send_channel_msg(msg, cid=user_cid)
+                if invoker_clid:
+                    self.send_pm_msg(invoker_clid, msg)
                 return
 
             existing_nums = set()
@@ -874,7 +1044,10 @@ class TS3Bridge:
                 data = json.loads(resp.read().decode())
                 new_id = data.get("Id")
         except Exception as e:
-            self.send_channel_msg(f"❌ Ошибка подключения нового бота: {e}", cid=user_cid)
+            err = f"❌ Ошибка подключения нового бота: {e}"
+            self.send_channel_msg(err, cid=user_cid)
+            if invoker_clid:
+                self.send_pm_msg(invoker_clid, err)
             return
 
         time.sleep(0.8)
@@ -916,8 +1089,10 @@ class TS3Bridge:
             f"• Бот автоматически выйдет, когда в канале никого не останется.",
             cid=user_cid
         )
+        if invoker_clid:
+            self.send_pm_msg(invoker_clid, f"🤖 Временный бот {bot_name} прибыл в ваш канал!")
 
-    def handle_bot_remove(self, user_cid):
+    def handle_bot_remove(self, user_cid, invoker_clid=None):
         target_bot = None
         with self.lock:
             for bot in self.bots.values():
@@ -926,17 +1101,26 @@ class TS3Bridge:
                     break
 
         if not target_bot:
-            self.send_channel_msg("В вашем канале нет музыкального бота.", cid=user_cid)
+            msg = "В вашем канале нет музыкального бота."
+            self.send_channel_msg(msg, cid=user_cid)
+            if invoker_clid:
+                self.send_pm_msg(invoker_clid, msg)
             return
 
         if target_bot.is_main:
-            self.send_channel_msg("⚠️ Основной бот VibeSpeak закреплен на сервере и не может быть удален.", cid=user_cid)
+            msg = "⚠️ Основной бот VibeSpeak закреплен на сервере и не может быть удален."
+            self.send_channel_msg(msg, cid=user_cid)
+            if invoker_clid:
+                self.send_pm_msg(invoker_clid, msg)
             return
 
-        self.send_channel_msg(f"👋 Временный бот {target_bot.name} покидает канал.", cid=user_cid)
+        msg = f"👋 Временный бот {target_bot.name} покидает канал."
+        self.send_channel_msg(msg, cid=user_cid)
+        if invoker_clid:
+            self.send_pm_msg(invoker_clid, msg)
         self.disconnect_bot(target_bot.bot_id)
 
-    def handle_bot_list(self, user_cid):
+    def handle_bot_list(self, user_cid, invoker_clid=None):
         with self.lock:
             msg = "🤖 АКТИВНЫЕ БОТЫ VIBESPEAK:\n"
             for bot in sorted(self.bots.values(), key=lambda b: b.bot_id):
@@ -947,6 +1131,8 @@ class TS3Bridge:
                 msg += f"• [{bot.name}] ({tag}) — Канал #{bot.cid} ({status})\n"
             msg += "\nЧтобы добавить бота в ваш канал: !bot add"
         self.send_channel_msg(msg.strip(), cid=user_cid)
+        if invoker_clid:
+            self.send_pm_msg(invoker_clid, msg.strip())
 
     def playback_and_lifecycle_loop(self):
         while True:
@@ -1009,7 +1195,7 @@ class TS3Bridge:
             except Exception as e:
                 print(f"[LIFECYCLE ERROR] {e}")
 
-    def handle_msg(self, text, invoker, invoker_cid):
+    def handle_msg(self, text, invoker, invoker_cid, source="channel", invoker_clid=0):
         raw = text.strip()
         if not raw.startswith('!') and not raw.startswith('/'):
             return
@@ -1019,36 +1205,48 @@ class TS3Bridge:
         cmd = parts[0].lower()
         arg = parts[1].strip() if len(parts) > 1 else ""
 
-        print(f"[CMD] {invoker} (Chan #{invoker_cid}): !{cmd} '{arg}'")
+        now = time.time()
+        dedup_key = f"{invoker}:{raw}"
+        with self.lock:
+            last_t = self.processed_cmds.get(dedup_key, 0)
+            if now - last_t < 1.5:
+                return
+            self.processed_cmds[dedup_key] = now
+
+        print(f"[CMD] {invoker} (Chan #{invoker_cid}, src={source}): !{cmd} '{arg}'")
 
         # 1. HELP / COMMANDS
         if cmd in ["help", "commands", "cmd", "команды", "помощь"]:
             self.send_channel_msg(COMMANDS_HELP_TEXT, cid=invoker_cid)
+            if source == "pm" and invoker_clid:
+                self.send_pm_msg(invoker_clid, COMMANDS_HELP_TEXT)
             return
 
         # 2. MULTI-BOT MANAGEMENT COMMANDS (!bot add, !bot remove, !bot list)
         if cmd == "bot":
             sub = arg.lower().split(' ')[0] if arg else ""
             if sub in ["add", "new", "+", "добавь", "создать"]:
-                self.handle_bot_add(invoker_cid, invoker)
+                self.handle_bot_add(invoker_cid, invoker, invoker_clid=invoker_clid)
                 return
             if sub in ["remove", "kick", "del", "delete", "-", "убрать", "удалить"]:
-                self.handle_bot_remove(invoker_cid)
+                self.handle_bot_remove(invoker_cid, invoker_clid=invoker_clid)
                 return
             if sub in ["list", "список", "боты"]:
-                self.handle_bot_list(invoker_cid)
+                self.handle_bot_list(invoker_cid, invoker_clid=invoker_clid)
                 return
-            self.send_channel_msg(
+            bot_help = (
                 "🤖 Управление ботами VibeSpeak:\n"
                 "• !bot add — добавить временного бота в ваш канал\n"
                 "• !bot remove — убрать временного бота из вашего канала\n"
-                "• !bot list — показать всех активных ботов",
-                cid=invoker_cid
+                "• !bot list — показать всех активных ботов"
             )
+            self.send_channel_msg(bot_help, cid=invoker_cid)
+            if source == "pm" and invoker_clid:
+                self.send_pm_msg(invoker_clid, bot_help)
             return
 
         if cmd in ["боты", "bots"]:
-            self.handle_bot_list(invoker_cid)
+            self.handle_bot_list(invoker_cid, invoker_clid=invoker_clid)
             return
 
         # Find the target bot in invoker's channel
@@ -1060,12 +1258,26 @@ class TS3Bridge:
                     break
 
         if not target_bot:
-            self.send_channel_msg(
-                "ℹ️ В вашем канале сейчас нет музыкального бота.\n"
-                "Напишите: !bot add, чтобы позвать временного бота в ваш канал!",
-                cid=invoker_cid
-            )
-            return
+            # If user wants to play music or radio, auto-summon a bot to their channel!
+            if cmd in ["play", "p", "плей", "играй", "radio", "r", "радио", "lofi"]:
+                self.handle_bot_add(invoker_cid, invoker, invoker_clid=invoker_clid)
+                time.sleep(0.5)
+                with self.lock:
+                    for bot in self.bots.values():
+                        if bot.cid == invoker_cid:
+                            target_bot = bot
+                            break
+
+            if not target_bot:
+                msg_not_found = (
+                    "ℹ️ В вашем канале сейчас нет музыкального бота.\n"
+                    "Напишите: !bot add, чтобы позвать временного бота в ваш канал!"
+                )
+                self.send_channel_msg(msg_not_found, cid=invoker_cid)
+                if source == "pm" and invoker_clid:
+                    self.send_pm_msg(invoker_clid, msg_not_found)
+                return
+
 
         # 3. RADIO COMMANDS
         if cmd in ["radio", "r", "радио"]:
@@ -1292,6 +1504,8 @@ class TS3Bridge:
         t_mon = threading.Thread(target=self.playback_and_lifecycle_loop, daemon=True)
         t_mon.start()
 
+        self.start_log_watcher()
+
         self.init_ym()
         self.connect_events()
 
@@ -1334,7 +1548,8 @@ class TS3Bridge:
                     clients = self.query_clients()
                     invoker_cid = clients.get(invoker_clid, {}).get("cid", 1)
 
-                    self.handle_msg(msg, invoker, invoker_cid)
+                    src = "server" if targetmode == 3 else "channel"
+                    self.handle_msg(msg, invoker, invoker_cid, source=src, invoker_clid=invoker_clid)
             except (socket.timeout, TimeoutError):
                 if time.time() - last_ping > 60:
                     try:
@@ -1352,5 +1567,14 @@ class TS3Bridge:
                     pass
 
 if __name__ == '__main__':
-    bridge = TS3Bridge()
+    cfg = load_config()
+    print(f"[CONFIG] Starting VibeSpeak Bridge: Host={cfg['host']}, Port={cfg['port']}, User={cfg['user']}")
+    bridge = TS3Bridge(
+        host=cfg["host"],
+        port=cfg["port"],
+        user=cfg["user"],
+        password=cfg["password"],
+        stream_port=cfg["stream_port"]
+    )
     bridge.run()
+

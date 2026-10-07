@@ -3,12 +3,15 @@ bot/ffmpeg.exe
 bot/ffprobe.exe
 
 # Database & Runtime logs
-bot/*.db
-bot/*.db-journal
+*.db
+*.db-journal
+logs/
 bot/logs/
 server/logs/
 server/ts3server.sqlitedb*
 server/*.log
+server/crashdumps/
+*.dmp
 
 # Temporary & cache files
 *.tmp
