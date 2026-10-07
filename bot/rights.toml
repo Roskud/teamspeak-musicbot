@@ -8,15 +8,40 @@
 	"cmd.song"
 ]
 
-# Admin rule for localhost (ServerQuery / ym_bridge)
+# Admin rule for localhost (WebAPI)
 [[rule]]
-	ip = [ "127.0.0.1", "::1" ]
+	ip = [ "127.0.0.1", "::1", "::ffff:127.0.0.1" ]
 	"+" = "*"
 
-# Admin rule for ServerAdmin group (group 6)
 [[rule]]
-	groupid = [ 6 ]
+	isapi = true
 	"+" = "*"
+
+# Admin rule for ServerAdmin groups (group 2: Query Admin, group 6: Server Admin)
+[[rule]]
+	groupid = [ 2, 6 ]
+	"+" = "*"
+
+# Admin rule for ServerQuery client
+[[rule]]
+	useruid = [ "serveradmin" ]
+	"+" = "*"
+
+# Full playback rights in Private Message (used by YandexBridge to control the player quietly)
+[[rule]]
+	visibility = [ "Private" ]
+	"+" = [
+		"cmd.play",
+		"cmd.pause",
+		"cmd.stop",
+		"cmd.seek",
+		"cmd.volume",
+		"cmd.next",
+		"cmd.previous",
+		"cmd.bot.avatar.*",
+		"cmd.song",
+		"cmd.clear"
+	]
 
 # Block commands from Channel and Server chat to prevent duplicate bot replies and error messages.
 # All channel user commands (!play, !stop, !radio, etc.) are handled cleanly by YandexBridge.

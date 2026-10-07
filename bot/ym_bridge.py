@@ -33,25 +33,10 @@ class StreamHandler(http.server.BaseHTTPRequestHandler):
     def do_HEAD(self):
         if self.path.startswith("/stream"):
             if StreamHandler.current_stream_url:
-                try:
-                    req = urllib.request.Request(
-                        StreamHandler.current_stream_url,
-                        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-                    )
-                    with urllib.request.urlopen(req, timeout=5) as resp:
-                        self.send_response(200)
-                        self.send_header("Content-Type", "audio/mpeg")
-                        cl = resp.headers.get("Content-Length")
-                        if cl:
-                            self.send_header("Content-Length", cl)
-                        self.send_header("Accept-Ranges", "bytes")
-                        self.end_headers()
-                        return
-                except Exception:
-                    self.send_response(200)
-                    self.send_header("Content-Type", "audio/mpeg")
-                    self.end_headers()
-                    return
+                self.send_response(302)
+                self.send_header("Location", StreamHandler.current_stream_url)
+                self.end_headers()
+                return
             self.send_response(404)
             self.end_headers()
             return
@@ -66,37 +51,15 @@ class StreamHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        # 1. Stream endpoint (Proxy audio stream directly to TS3AudioBot)
+        # 1. Stream endpoint (302 Redirect directly to audio URL so FFmpeg handles native streaming)
         if self.path.startswith("/stream"):
             if StreamHandler.current_stream_url:
-                try:
-                    req = urllib.request.Request(
-                        StreamHandler.current_stream_url,
-                        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-                    )
-                    with urllib.request.urlopen(req, timeout=10) as resp:
-                        self.send_response(200)
-                        self.send_header("Content-Type", "audio/mpeg")
-                        cl = resp.headers.get("Content-Length")
-                        if cl:
-                            self.send_header("Content-Length", cl)
-                        self.send_header("Accept-Ranges", "bytes")
-                        self.end_headers()
-                        while True:
-                            chunk = resp.read(64 * 1024)
-                            if not chunk:
-                                break
-                            self.wfile.write(chunk)
-                        return
-                except (ConnectionResetError, BrokenPipeError):
-                    # Player stopped / skipped song
-                    return
-                except Exception as e:
-                    print(f"[STREAM PROXY] Streaming finished or interrupted: {e}")
-                    return
-            else:
-                self.send_response(404)
+                self.send_response(302)
+                self.send_header("Location", StreamHandler.current_stream_url)
                 self.end_headers()
+                return
+            self.send_response(404)
+            self.end_headers()
             return
 
         # 2. Local Yandex Music logo icon endpoint
@@ -367,14 +330,32 @@ class TS3Bridge:
         return None
 
     def command_bot_silent(self, bot_cmd):
-        # Sends commands to MusicBot via Private Message so ZERO spam appears in the channel
-        bot_clid = self.get_bot_clid()
-        esc = ts3_escape(bot_cmd)
-        if bot_clid:
-            cmd = f"sendtextmessage targetmode=1 target={bot_clid} msg={esc}\n"
-        else:
-            cmd = f"sendtextmessage targetmode=2 msg={esc}\n"
-        self.tn.write(cmd.encode('utf-8'))
+        # Executes commands directly on TS3AudioBot via internal local Web API
+        # 100% reliable, zero chat spam, instant execution
+        try:
+            parts = bot_cmd.lstrip('!/').split(' ', 1)
+            action = parts[0].lower()
+            param = parts[1].strip() if len(parts) > 1 else ""
+            if param:
+                if action == "bot":
+                    subparts = param.split(' ')
+                    sub_path = "/".join(subparts[:-1]) if len(subparts) > 1 else subparts[0]
+                    last_arg = urllib.parse.quote(subparts[-1], safe='') if len(subparts) > 1 else ""
+                    if last_arg:
+                        endpoint = f"http://127.0.0.1:58913/api/bot/use/0/(/bot/{sub_path}/{last_arg})"
+                    else:
+                        endpoint = f"http://127.0.0.1:58913/api/bot/use/0/(/bot/{sub_path})"
+                else:
+                    enc_param = urllib.parse.quote(param, safe='')
+                    endpoint = f"http://127.0.0.1:58913/api/bot/use/0/(/{action}/{enc_param})"
+            else:
+                endpoint = f"http://127.0.0.1:58913/api/bot/use/0/(/{action})"
+
+            req = urllib.request.Request(endpoint)
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                pass
+        except Exception as e:
+            print(f"[API] command_bot_silent error for '{bot_cmd}': {e}")
 
     def set_bot_avatar(self, cover_url):
         if cover_url:
@@ -406,7 +387,15 @@ class TS3Bridge:
             try:
                 clean_q = re.sub(r'^(ym:|play\s+|p\s+)', '', query, flags=re.I).strip()
                 search = self.ym_client.search(clean_q)
-                if search and search.tracks and search.tracks.results:
+                # If artist was matched as best result, pick their top track
+                if search and search.best and search.best.type == 'artist':
+                    try:
+                        pop = search.best.result.get_tracks()
+                        if pop and pop.tracks:
+                            track = pop.tracks[0]
+                    except Exception:
+                        pass
+                if not track and search and search.tracks and search.tracks.results:
                     track = search.tracks.results[0]
             except Exception as e:
                 return None, f"Ошибка поиска трека: {e}", None
@@ -588,15 +577,9 @@ class TS3Bridge:
         self.connect()
 
         buffer = ""
-        last_sync = 0
         while True:
             try:
-                time.sleep(0.15)
-                now = time.time()
-                if now - last_sync > 3.0:
-                    last_sync = now
-                    self.sync_channel()
-
+                time.sleep(0.08)
                 chunk = self.tn.read_very_eager().decode('utf-8', errors='ignore')
                 if not chunk:
                     continue
@@ -617,8 +600,8 @@ class TS3Bridge:
                     msg = ts3_unescape(msg_raw)
                     invoker = ts3_unescape(invoker_raw)
 
-                    # Ignore our own messages or serveradmin query
-                    if invoker in ["YandexBridge", "serveradmin", "🎵 MusicBot"]:
+                    # Ignore our own messages or serveradmin query or MusicBot
+                    if 'MusicBot' in invoker or invoker in ["YandexBridge", "serveradmin"]:
                         continue
 
                     self.handle_msg(msg, invoker)
