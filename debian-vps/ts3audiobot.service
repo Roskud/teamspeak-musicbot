@@ -11,12 +11,14 @@ WorkingDirectory=/opt/ts3audiobot
 ExecStart=/opt/ts3audiobot/start.sh
 Restart=always
 RestartSec=5
+KillMode=mixed
+Environment=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 
 # Безопасность и оптимизация ресурсов
 ProtectSystem=full
 ProtectHome=true
 NoNewPrivileges=true
-MemoryMax=384M
+MemoryMax=512M
 CPUQuota=80%
 
 [Install]

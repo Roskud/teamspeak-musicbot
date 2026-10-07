@@ -144,11 +144,12 @@ youtube_api_key = ""
 
 [tools]
 #Path to the youtube-dl binary or local git repository.
-youtube-dl = { path = "disable_ytdl.bat" }
+youtube-dl = { path = "disable_ytdl.sh" }
 
 #The path to ffmpeg.
 [tools.ffmpeg]
-path = "ffmpeg.exe"
+path = "ffmpeg"
+
 
 [rights]
 #Path to the permission file. The file will be generated if it doesn't exist.

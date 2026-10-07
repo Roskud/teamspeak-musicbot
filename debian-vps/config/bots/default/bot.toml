@@ -15,9 +15,9 @@ client_version = {  }
 
 [connect.identity]
 #||| DO NOT MAKE THIS KEY PUBLIC ||| The client identity. You can import a teamspeak3 identity here too.
-key = "MCkDAgbAAgEgAiBWOl9niLYpR1+xj7+OT9bB2ue41YifsLOgZTh3rWwLWQ=="
+key = ""
 #The client identity offset determining the security level.
-offset = 99
+offset = 0
 #The client identity security level which should be calculated before connecting
 #or -1 to generate on demand when connecting.
 level = -1

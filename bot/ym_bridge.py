@@ -10,6 +10,7 @@ import re
 import urllib.parse
 import urllib.request
 import logging
+import json
 
 # Suppress yandex_music verbose logs
 logging.getLogger("yandex_music").setLevel(logging.CRITICAL)
@@ -150,51 +151,59 @@ RADIO_LIST_TEXT = (
 )
 
 COMMANDS_HELP_TEXT = (
-    "🎵 КОМАНДЫ МУЗЫКАЛЬНОГО БОТА (Яндекс.Музыка и Радио):\n\n"
+    "🎵 КОМАНДЫ МУЗЫКАЛЬНОГО БОТА:\n\n"
     "▶ ВОСПРОИЗВЕДЕНИЕ (Яндекс.Музыка):\n"
-    "• !play <название песни или артист> — поиск и воспроизведение любого трека из Яндекс.Музыки\n"
-    "• !play <ссылка на трек Яндекс.Музыки> — воспроизведение по прямой ссылке\n"
-    "  (Пример: !play Король и Шут Лесник или !p Anna Asti)\n\n"
-    "📻 РАДИОСТАНЦИИ (Lo-Fi и радио):\n"
+    "• !play <название или артист> — воспроизвести трек (или добавить в очередь, если уже играет)\n"
+    "• !play <ссылка на трек/альбом> — воспроизведение по прямой ссылке\n\n"
+    "📋 ОЧЕРЕДЬ И ЗАЦИКЛИВАНИЕ:\n"
+    "• !queue (или !q) — показать текущую очередь и статус повтора\n"
+    "• !loop (или !repeat) — включить / выключить зацикливание текущего трека\n"
+    "• !skip (или !next) — пропустить текущий трек и включить следующий из очереди\n"
+    "• !remove <номер> — удалить трек из очереди (например: !remove 2)\n"
+    "• !clear — очистить очередь ожидания (текущий трек продолжит играть)\n\n"
+    "📻 РАДИОСТАНЦИИ (24/7 Lo-Fi и радио):\n"
     "• !radio — список всех 11 доступных радиостанций\n"
     "• !radio <1..11> (или !r <1..11>) — включить радиостанцию\n"
-    "• !lofi — быстрый запуск круглосуточного Lo-Fi Hip Hop\n\n"
-    "⚙️ УПРАВЛЕНИЕ МУЗЫКОЙ:\n"
-    "• !pause — пауза / снять с паузы\n"
-    "• !stop (или !s) — остановить воспроизведение\n"
-    "• !volume <0..100> (или !vol <число>) — изменить громкость (0-100%)\n"
-    "• !song (или !np) — узнать, что сейчас играет\n"
-    "• !clear — очистить очередь воспроизведения\n"
-    "• !commands (или !help, !помощь) — открыть эту справку\n\n"
-    "Примечание: Сервисы YouTube, SoundCloud и VK отключены. Все команды работают также через слэш (например /play, /radio, /stop)."
+    "• !lofi — быстрый запуск круглосуточного Lo-Fi Hip Hop (#1)\n\n"
+    "⚙️ УПРАВЛЕНИЕ ЗВУКОМ:\n"
+    "• !pause — пауза / продолжить воспроизведение\n"
+    "• !stop (или !s) — остановить воспроизведение и сбросить очередь\n"
+    "• !vol <0..100> — изменить громкость (или !vol без чисел — текущая громкость)\n"
+    "• !song (или !np) — информация о текущем треке\n"
+    "• !commands (или !help) — открыть этот список команд\n\n"
+    "Примечание: YouTube, SoundCloud и VK отключены. Все команды работают также со слэшем (/play, /queue, /loop, /skip)."
 )
 
 CHANNEL_DESC_TEXT = (
-    "[center][b][size=14][color=#0984e3]🎵 МУЗЫКАЛЬНЫЙ БОТ (Яндекс.Музыка & Радио)[/color][/size][/b][/center]\n\n"
-    "[b][color=#00b894]▶ ВОСПРОИЗВЕДЕНИЕ:[/color][/b]\n"
-    "• [b]!play <песня или артист>[/b] — поиск и воспроизведение в Яндекс.Музыке\n"
-    "• [b]!play <ссылка>[/b] — воспроизведение по прямой ссылке Яндекс.Музыки\n\n"
-    "[b][color=#fbc531]📻 РАДИОСТАНЦИИ (!radio 1..11):[/color][/b]\n"
-    "• [b]!radio 1[/b] — Hunter FM Lo-Fi Hip Hop (24/7 чилл)\n"
-    "• [b]!radio 2[/b] — FluxFM Chillhop HQ\n"
-    "• [b]!radio 3[/b] — Lo-Fi Girl 24/7\n"
-    "• [b]!radio 4[/b] — Nightride Chillsynth\n"
-    "• [b]!radio 5[/b] — Radio Record (EDM)\n"
-    "• [b]!radio 6[/b] — DFM (Клубная)\n"
-    "• [b]!radio 7[/b] — Europa Plus (Хиты)\n"
-    "• [b]!radio 8[/b] — Energy NRJ (Поп)\n"
-    "• [b]!radio 9[/b] — Relax FM (Лаунж)\n"
-    "• [b]!radio 10[/b] — Наше Радио (Рок)\n"
-    "• [b]!radio 11[/b] — Маруся FM (Русские хиты)\n"
-    "• [b]!lofi[/b] — быстрый запуск Lo-Fi станции #1\n\n"
-    "[b][color=#6c5ce7]⚙️ УПРАВЛЕНИЕ:[/color][/b]\n"
-    "• [b]!pause[/b] — пауза / снять с паузы\n"
-    "• [b]!stop[/b] (или [b]!s[/b]) — остановить\n"
-    "• [b]!vol <0..100>[/b] — изменить громкость\n"
-    "• [b]!song[/b] (или [b]!np[/b]) — текущий трек\n"
-    "• [b]!radio[/b] — список всех радиостанций\n"
-    "• [b]!commands[/b] — показать список команд в чат\n\n"
-    "[color=#e74c3c][b]Примечание:[/b] YouTube, SoundCloud и VK отключены. Все команды работают также через слэш (например /play, /radio).[/color]"
+    "🎵 МУЗЫКАЛЬНЫЙ БОТ (Яндекс.Музыка & Радио 24/7)\n\n"
+    "▶ ВОСПРОИЗВЕДЕНИЕ:\n"
+    "• !play <песня/артист> — поиск и воспроизведение в Яндекс.Музыке\n"
+    "• !play <ссылка> — трек или альбом по прямой ссылке\n\n"
+    "📋 ОЧЕРЕДЬ И ЗАЦИКЛИВАНИЕ:\n"
+    "• !queue (или !q) — посмотреть текущую очередь\n"
+    "• !loop — включить/выключить повтор трека\n"
+    "• !skip — следующий трек из очереди\n"
+    "• !remove <номер> — удалить трек из очереди\n"
+    "• !clear — очистить очередь ожидания\n\n"
+    "📻 РАДИОСТАНЦИИ (!radio 1..11):\n"
+    "• !radio 1 — Hunter FM Lo-Fi Hip Hop (24/7 чилл)\n"
+    "• !radio 2 — FluxFM Chillhop HQ\n"
+    "• !radio 3 — Lo-Fi Girl 24/7\n"
+    "• !radio 4 — Nightride Chillsynth\n"
+    "• !radio 5 — Radio Record (EDM)\n"
+    "• !radio 6 — DFM (Клубная)\n"
+    "• !radio 7 — Europa Plus (Хиты)\n"
+    "• !radio 8 — Energy NRJ (Поп)\n"
+    "• !radio 9 — Relax FM (Лаунж)\n"
+    "• !radio 10 — Наше Радио (Рок)\n"
+    "• !radio 11 — Маруся FM (Русские хиты)\n"
+    "• !lofi — быстрый запуск Lo-Fi станции #1\n\n"
+    "⚙️ УПРАВЛЕНИЕ:\n"
+    "• !pause — пауза / продолжить\n"
+    "• !stop (или !s) — остановить и сбросить очередь\n"
+    "• !vol <0..100> — громкость бота\n"
+    "• !song (или !np) — текущий трек\n"
+    "• !commands — справка по командам"
 )
 
 class TS3Bridge:
@@ -206,14 +215,27 @@ class TS3Bridge:
         self.stream_port = stream_port
         self.tn = None
         self.ym_client = None
-        self.current_track_title = None
+
+        # Queue & Loop State
+        self.queue = []            # list of track items
+        self.current_item = None   # currently playing item dict or None
+        self.is_looping = False    # loop mode flag
+        self.is_radio = False      # radio playing flag
+        self.play_started_at = 0.0 # timestamp when playback started
+        self.queue_lock = threading.Lock()
+
         self.current_bot_cid = 1
         self.my_clid = None
 
     def get_token(self):
         token = os.environ.get("YANDEX_MUSIC_TOKEN") or os.environ.get("YMTOKEN")
         if token and token.strip():
-            return token.strip()
+            clean = token.strip()
+            m = re.search(r'access_token=([a-zA-Z0-9_\-]+)', clean)
+            if m:
+                return m.group(1)
+            return re.sub(r'^(token\s*=\s*|OAuth\s+)', '', clean, flags=re.I).strip('\'" ')
+
         candidates = [
             TOKEN_FILE,
             os.path.join(BASE_DIR, "config", "yandex_token.txt"),
@@ -229,12 +251,15 @@ class TS3Bridge:
                                 m = re.search(r'access_token=([a-zA-Z0-9_\-]+)', clean)
                                 if m:
                                     return m.group(1)
-                                return clean
+                                return re.sub(r'^(token\s*=\s*|OAuth\s+)', '', clean, flags=re.I).strip('\'" ')
                 except Exception:
                     pass
         return None
 
     def init_ym(self):
+        if not yandex_music:
+            print("[YM] Warning: yandex-music library is not installed.")
+            return
         token = self.get_token()
         try:
             if token:
@@ -311,23 +336,12 @@ class TS3Bridge:
         self.update_channel_desc()
 
     def send_channel_msg(self, msg_text):
-        esc = ts3_escape(msg_text)
-        cmd = f"sendtextmessage targetmode=2 msg={esc}\n"
-        self.tn.write(cmd.encode('utf-8'))
-
-    def get_bot_clid(self):
         try:
-            self.tn.write(b"clientlist\n")
-            time.sleep(0.06)
-            raw = self.tn.read_very_eager().decode('utf-8', errors='ignore')
-            for part in raw.split('|'):
-                if 'MusicBot' in part:
-                    for f in part.split():
-                        if f.startswith('clid='):
-                            return f.split('=')[1]
-        except Exception:
-            pass
-        return None
+            esc = ts3_escape(msg_text)
+            cmd = f"sendtextmessage targetmode=2 msg={esc}\n"
+            self.tn.write(cmd.encode('utf-8'))
+        except Exception as e:
+            print(f"[TS3] Error sending channel message: {e}")
 
     def command_bot_silent(self, bot_cmd):
         # Executes commands directly on TS3AudioBot via internal local Web API
@@ -357,6 +371,18 @@ class TS3Bridge:
         except Exception as e:
             print(f"[API] command_bot_silent error for '{bot_cmd}': {e}")
 
+    def is_bot_active(self):
+        try:
+            req = urllib.request.Request("http://127.0.0.1:58913/api/bot/use/0/(/song)")
+            with urllib.request.urlopen(req, timeout=1.5) as r:
+                data = json.loads(r.read().decode())
+                return True, data
+        except urllib.error.HTTPError:
+            # HTTP 422: Nothing on right now
+            return False, None
+        except Exception:
+            return False, None
+
     def set_bot_avatar(self, cover_url):
         if cover_url:
             self.command_bot_silent(f"!bot avatar set {cover_url}")
@@ -367,66 +393,200 @@ class TS3Bridge:
     def clear_bot_avatar(self):
         self.command_bot_silent("!bot avatar clear")
 
+    def _make_track_item(self, track):
+        artists = ", ".join(a.name for a in track.artists) if getattr(track, 'artists', None) else "Исполнитель"
+        duration = ""
+        dur_sec = 0
+        if getattr(track, 'duration_ms', None):
+            dur_sec = int(track.duration_ms / 1000)
+            m, s = divmod(dur_sec, 60)
+            duration = f" [{m:02d}:{s:02d}]"
+        title_str = f"{artists} — {track.title}{duration}"
+
+        cover_url = None
+        if getattr(track, 'cover_uri', None):
+            cover_url = f"https://{track.cover_uri.replace('%%', '400x400')}"
+        else:
+            cover_url = f"http://127.0.0.1:{self.stream_port}/ym_logo.png"
+
+        return {
+            "title": title_str,
+            "track": track,
+            "track_id": track.id,
+            "cover_url": cover_url,
+            "duration_sec": dur_sec,
+            "source": "yandex",
+            "direct_link": None
+        }
+
+    def get_track_direct_link(self, item):
+        if item.get("direct_link"):
+            return item["direct_link"]
+        track = item.get("track")
+        if not track:
+            return None
+        try:
+            d_info = track.get_download_info()
+            if not d_info:
+                return None
+            best = sorted(d_info, key=lambda x: getattr(x, 'bitrate_in_kbps', 0), reverse=True)[0]
+            link = best.get_direct_link()
+            item["direct_link"] = link
+            return link
+        except Exception as e:
+            print(f"[YM] Error resolving direct link for {item.get('title')}: {e}")
+            try:
+                if self.ym_client:
+                    refreshed = self.ym_client.tracks([track.id])[0]
+                    d_info = refreshed.get_download_info()
+                    best = sorted(d_info, key=lambda x: getattr(x, 'bitrate_in_kbps', 0), reverse=True)[0]
+                    link = best.get_direct_link()
+                    item["direct_link"] = link
+                    return link
+            except Exception:
+                pass
+            return None
+
     def resolve_yandex(self, query):
         if not self.ym_client:
             self.init_ym()
         if not self.ym_client:
-            return None, "Не удалось подключиться к сервису Яндекс.Музыка.", None
+            return None, "Не удалось подключиться к сервису Яндекс.Музыка."
 
-        track = None
-        # Check if direct track URL (e.g. music.yandex.ru/album/123/track/456 or /track/456)
+        # Check for Album link: music.yandex.ru/album/12345
+        album_match = re.search(r'album/(\d+)(?!/track)', query)
+        if album_match:
+            try:
+                album_id = album_match.group(1)
+                album = self.ym_client.albums_with_tracks(album_id)
+                if album and album.volumes:
+                    raw_tracks = [t for v in album.volumes for t in v]
+                    if raw_tracks:
+                        items = [self._make_track_item(t) for t in raw_tracks]
+                        album_title = album.title or "Альбом"
+                        return items, f"альбом \"{album_title}\""
+            except Exception as e:
+                return None, f"Ошибка загрузки альбома: {e}"
+
+        # Check for Playlist link: music.yandex.ru/users/.../playlists/...
+        pl_match = re.search(r'users/([^/]+)/playlists/(\d+)', query)
+        if pl_match:
+            try:
+                user_id, kind = pl_match.group(1), int(pl_match.group(2))
+                pl = self.ym_client.users_playlists(kind, user_id)
+                if pl and pl.tracks:
+                    raw_tracks = [t.track for t in pl.tracks if getattr(t, 'track', None)]
+                    if raw_tracks:
+                        items = [self._make_track_item(t) for t in raw_tracks]
+                        pl_title = pl.title or "Плейлист"
+                        return items, f"плейлист \"{pl_title}\""
+            except Exception as e:
+                return None, f"Ошибка загрузки плейлиста: {e}"
+
+        # Check for Track link: music.yandex.ru/album/.../track/123 or track/123
         track_match = re.search(r'track/(\d+)', query)
         if track_match:
             try:
                 tracks = self.ym_client.tracks([track_match.group(1)])
                 if tracks:
-                    track = tracks[0]
+                    return [self._make_track_item(tracks[0])], None
             except Exception as e:
-                return None, f"Ошибка загрузки трека: {e}", None
-        else:
-            try:
-                clean_q = re.sub(r'^(ym:|play\s+|p\s+)', '', query, flags=re.I).strip()
-                search = self.ym_client.search(clean_q)
-                # If artist was matched as best result, pick their top track
-                if search and search.best and search.best.type == 'artist':
-                    try:
-                        pop = search.best.result.get_tracks()
-                        if pop and pop.tracks:
-                            track = pop.tracks[0]
-                    except Exception:
-                        pass
-                if not track and search and search.tracks and search.tracks.results:
-                    track = search.tracks.results[0]
-            except Exception as e:
-                return None, f"Ошибка поиска трека: {e}", None
+                return None, f"Ошибка загрузки трека: {e}"
 
-        if not track:
-            return None, f"Трек не найден на Яндекс.Музыке: {query}", None
-
+        # General Search query
         try:
-            d_info = track.get_download_info()
-            if not d_info:
-                return None, "Прямой поток трека недоступен.", None
-            best = sorted(d_info, key=lambda x: getattr(x, 'bitrate_in_kbps', 0), reverse=True)[0]
-            direct_link = best.get_direct_link()
-            artists = ", ".join(a.name for a in track.artists) if track.artists else "Исполнитель"
-            duration = ""
-            if track.duration_ms:
-                sec = int(track.duration_ms / 1000)
-                m, s = divmod(sec, 60)
-                duration = f" [{m:02d}:{s:02d}]"
-            full_title = f"{artists} — {track.title}{duration}"
-
-            # Resolve cover image
-            cover_url = None
-            if track.cover_uri:
-                cover_url = f"https://{track.cover_uri.replace('%%', '400x400')}"
-            else:
-                cover_url = f"http://127.0.0.1:{self.stream_port}/ym_logo.png"
-
-            return direct_link, full_title, cover_url
+            clean_q = re.sub(r'^(ym:|play\s+|p\s+)', '', query, flags=re.I).strip()
+            search = self.ym_client.search(clean_q)
+            # If artist was matched as top result, pick their top hit
+            if search and search.best and search.best.type == 'artist':
+                try:
+                    pop = search.best.result.get_tracks()
+                    if pop and pop.tracks:
+                        return [self._make_track_item(pop.tracks[0])], None
+                except Exception:
+                    pass
+            if search and search.tracks and search.tracks.results:
+                return [self._make_track_item(search.tracks.results[0])], None
         except Exception as e:
-            return None, f"Ошибка получения аудиопотока: {e}", None
+            return None, f"Ошибка поиска трека: {e}"
+
+        return None, f"Трек не найден на Яндекс.Музыке: {query}"
+
+    def play_item(self, item, notify=True, is_loop=False):
+        if item.get("source") == "radio":
+            url = item["stream_url"]
+            StreamHandler.current_stream_url = url
+            StreamHandler.current_title = item["title"]
+            StreamHandler.current_cover_url = item["cover_url"]
+            self.set_bot_avatar(item["cover_url"])
+            self.current_item = item
+            self.is_radio = True
+            self.play_started_at = time.time()
+            stream_url = f"http://127.0.0.1:{self.stream_port}/stream/{int(time.time())}.mp3"
+            self.command_bot_silent(f"!play {stream_url}")
+            if notify:
+                self.send_channel_msg(f"📻 Запуск радио: {item['title']}")
+            return True
+
+        direct_link = self.get_track_direct_link(item)
+        if not direct_link:
+            self.send_channel_msg(f"⚠️ Не удалось получить аудиопоток: {item['title']}")
+            with self.queue_lock:
+                if self.queue:
+                    next_item = self.queue.pop(0)
+                    return self.play_item(next_item, notify=True)
+                else:
+                    self.current_item = None
+                    self.clear_bot_avatar()
+            return False
+
+        StreamHandler.current_stream_url = direct_link
+        StreamHandler.current_title = item["title"]
+        StreamHandler.current_cover_url = item.get("cover_url", "")
+        self.set_bot_avatar(item.get("cover_url"))
+        self.current_item = item
+        self.is_radio = False
+        self.play_started_at = time.time()
+        stream_url = f"http://127.0.0.1:{self.stream_port}/stream/{int(time.time())}.mp3"
+        self.command_bot_silent(f"!play {stream_url}")
+        if notify:
+            if not is_loop:
+                self.send_channel_msg(f"▶ Играет Яндекс.Музыка: {item['title']}")
+        return True
+
+    def playback_monitor_loop(self):
+        while True:
+            try:
+                time.sleep(1.0)
+                with self.queue_lock:
+                    if not self.current_item or self.is_radio:
+                        continue
+
+                    # Grace period of 3.5s after play started
+                    if time.time() - self.play_started_at < 3.5:
+                        continue
+
+                    is_active, data = self.is_bot_active()
+                    if is_active:
+                        # Player is active (playing or paused)
+                        continue
+
+                    # Player finished current track (HTTP 422)
+                    print(f"[QUEUE] Track completed: {self.current_item.get('title')}")
+                    if self.is_looping and self.current_item:
+                        print(f"[QUEUE] Repeating track due to loop mode: {self.current_item.get('title')}")
+                        self.play_item(self.current_item, notify=False, is_loop=True)
+                    elif self.queue:
+                        next_item = self.queue.pop(0)
+                        print(f"[QUEUE] Playing next item: {next_item.get('title')}")
+                        self.play_item(next_item, notify=True)
+                    else:
+                        print("[QUEUE] Queue finished.")
+                        self.current_item = None
+                        self.clear_bot_avatar()
+                        self.send_channel_msg("⏹️ Очередь треков завершена.")
+            except Exception as e:
+                print(f"[QUEUE ERROR] {e}")
 
     def handle_msg(self, text, invoker):
         raw = text.strip()
@@ -452,14 +612,14 @@ class TS3Bridge:
                 return
             if arg in RADIO_STATIONS:
                 name, url = RADIO_STATIONS[arg]
-                self.send_channel_msg(f"📻 Запуск радио: {name}")
-                self.set_bot_avatar(f"http://127.0.0.1:{self.stream_port}/ym_logo.png")
-                StreamHandler.current_stream_url = url
-                StreamHandler.current_title = f"Радио: {name}"
-                StreamHandler.current_cover_url = f"http://127.0.0.1:{self.stream_port}/ym_logo.png"
-                self.current_track_title = f"Радио: {name}"
-                stream_url = f"http://127.0.0.1:{self.stream_port}/stream/{int(time.time())}.mp3"
-                self.command_bot_silent(f"!play {stream_url}")
+                with self.queue_lock:
+                    item = {
+                        "title": f"{name}",
+                        "stream_url": url,
+                        "cover_url": f"http://127.0.0.1:{self.stream_port}/ym_logo.png",
+                        "source": "radio"
+                    }
+                    self.play_item(item, notify=True)
                 return
             else:
                 self.send_channel_msg(f"Неверный номер станции: {arg}. Доступны номера 1..11. Введите !radio для списка.")
@@ -467,29 +627,29 @@ class TS3Bridge:
 
         if cmd in ["r"] and arg in RADIO_STATIONS:
             name, url = RADIO_STATIONS[arg]
-            self.send_channel_msg(f"📻 Запуск радио: {name}")
-            self.set_bot_avatar(f"http://127.0.0.1:{self.stream_port}/ym_logo.png")
-            StreamHandler.current_stream_url = url
-            StreamHandler.current_title = f"Радио: {name}"
-            StreamHandler.current_cover_url = f"http://127.0.0.1:{self.stream_port}/ym_logo.png"
-            self.current_track_title = f"Радио: {name}"
-            stream_url = f"http://127.0.0.1:{self.stream_port}/stream/{int(time.time())}.mp3"
-            self.command_bot_silent(f"!play {stream_url}")
+            with self.queue_lock:
+                item = {
+                    "title": f"{name}",
+                    "stream_url": url,
+                    "cover_url": f"http://127.0.0.1:{self.stream_port}/ym_logo.png",
+                    "source": "radio"
+                }
+                self.play_item(item, notify=True)
             return
 
         if cmd in ["lofi", "лофи"]:
             name, url = RADIO_STATIONS["1"]
-            self.send_channel_msg(f"📻 Запуск радио: {name}")
-            self.set_bot_avatar(f"http://127.0.0.1:{self.stream_port}/ym_logo.png")
-            StreamHandler.current_stream_url = url
-            StreamHandler.current_title = f"Радио: {name}"
-            StreamHandler.current_cover_url = f"http://127.0.0.1:{self.stream_port}/ym_logo.png"
-            self.current_track_title = f"Радио: {name}"
-            stream_url = f"http://127.0.0.1:{self.stream_port}/stream/{int(time.time())}.mp3"
-            self.command_bot_silent(f"!play {stream_url}")
+            with self.queue_lock:
+                item = {
+                    "title": f"{name}",
+                    "stream_url": url,
+                    "cover_url": f"http://127.0.0.1:{self.stream_port}/ym_logo.png",
+                    "source": "radio"
+                }
+                self.play_item(item, notify=True)
             return
 
-        # 3. PLAY / P (Yandex Music)
+        # 3. PLAY / P (Yandex Music with Queue support)
         if cmd in ["play", "p", "включи", "играть", "ym"]:
             if not arg:
                 self.send_channel_msg("Укажите название песни или ссылку Яндекс.Музыки (например: !play Король и Шут)")
@@ -504,75 +664,220 @@ class TS3Bridge:
                 self.send_channel_msg("❌ ВКонтакте не поддерживается. Напишите название трека через !play <название>, чтобы включить его из Яндекс.Музыки.")
                 return
 
-            direct_link, title_or_err, cover_url = self.resolve_yandex(arg)
-            if not direct_link:
-                self.send_channel_msg(f"❌ {title_or_err}")
+            items, err_or_name = self.resolve_yandex(arg)
+            if not items:
+                self.send_channel_msg(f"❌ {err_or_name}")
                 return
 
-            # Store in stream handler for 302 redirect
-            StreamHandler.current_stream_url = direct_link
-            StreamHandler.current_title = title_or_err
-            StreamHandler.current_cover_url = cover_url or ""
-            self.current_track_title = title_or_err
+            with self.queue_lock:
+                is_active, _ = self.is_bot_active()
+                is_currently_playing = is_active and self.current_item is not None and not self.is_radio
 
-            # Set avatar quietly via PM
-            self.set_bot_avatar(cover_url)
-
-            # Send single, clean confirmation to channel (NO search progress, NO raw commands)
-            self.send_channel_msg(f"▶ Играет Яндекс.Музыка: {title_or_err}")
-
-            # Command bot to stream quietly via PM
-            stream_url = f"http://127.0.0.1:{self.stream_port}/stream/{int(time.time())}.mp3"
-            self.command_bot_silent(f"!play {stream_url}")
+                if len(items) > 1:
+                    # Multiple tracks from Album or Playlist
+                    if is_currently_playing:
+                        self.queue.extend(items)
+                        self.send_channel_msg(f"➕ Добавлен {err_or_name} ({len(items)} треков в очередь).")
+                    else:
+                        first = items[0]
+                        rest = items[1:]
+                        self.queue.extend(rest)
+                        self.send_channel_msg(f"💿 Запуск: {err_or_name} (всего {len(items)} треков).")
+                        self.play_item(first, notify=True)
+                else:
+                    # Single track
+                    track_item = items[0]
+                    if is_currently_playing:
+                        self.queue.append(track_item)
+                        pos = len(self.queue)
+                        self.send_channel_msg(f"➕ Добавлено в очередь (#{pos}): {track_item['title']}")
+                    else:
+                        # Play immediately
+                        self.play_item(track_item, notify=True)
             return
 
-        # 4. STOP / S
-        if cmd in ["stop", "s", "стоп"]:
-            self.current_track_title = None
-            StreamHandler.current_stream_url = ""
-            StreamHandler.current_title = ""
-            self.command_bot_silent("!stop")
-            self.clear_bot_avatar()
-            self.send_channel_msg("⏹️ Воспроизведение остановлено.")
+        # 4. QUEUE / Q (Show current queue)
+        if cmd in ["queue", "q", "очередь"]:
+            with self.queue_lock:
+                is_active, data = self.is_bot_active()
+                if not self.current_item or not is_active:
+                    if self.queue:
+                        msg = f"🎵 В очереди ожидают ({len(self.queue)} треков):\n"
+                        for i, it in enumerate(self.queue[:10], 1):
+                            msg += f"{i}. {it['title']}\n"
+                        if len(self.queue) > 10:
+                            msg += f"... и ещё {len(self.queue) - 10} трек(ов).\n"
+                        msg += "Включите первый трек: !skip или !play"
+                        self.send_channel_msg(msg.strip())
+                    else:
+                        self.send_channel_msg("🎵 Очередь пуста. Включите музыку: !play <название> или !radio 1..11")
+                    return
+
+                time_str = ""
+                paused_str = ""
+                if data:
+                    pos = int(data.get("Position", 0))
+                    length = int(data.get("Length", 0))
+                    if data.get("Paused", False):
+                        paused_str = " (на паузе)"
+                    m1, s1 = divmod(pos, 60)
+                    if length > 0:
+                        m2, s2 = divmod(length, 60)
+                        time_str = f" [{m1:02d}:{s1:02d} / {m2:02d}:{s2:02d}]"
+                    elif pos > 0:
+                        time_str = f" [{m1:02d}:{s1:02d}]"
+
+                loop_str = "🔁 Повтор: ВКЛ" if self.is_looping else "Повтор: ВЫКЛ"
+                total_count = 1 + len(self.queue)
+                header = f"🎵 ОЧЕРЕДЬ ВОСПРОИЗВЕДЕНИЯ ({total_count} трек(ов)):\n▶ Сейчас играет: {self.current_item['title']}{time_str}{paused_str} ({loop_str})\n"
+                if self.queue:
+                    header += f"\n📋 Следующие в очереди ({len(self.queue)}):\n"
+                    for i, it in enumerate(self.queue[:10], 1):
+                        header += f"{i}. {it['title']}\n"
+                    if len(self.queue) > 10:
+                        header += f"... и ещё {len(self.queue) - 10} трек(ов)\n"
+                else:
+                    header += "\n📋 Очередь пуста. Добавьте следующий трек: !play <название>"
+
+                self.send_channel_msg(header.strip())
             return
 
-        # 5. PAUSE
-        if cmd in ["pause", "пауза"]:
-            self.command_bot_silent("!pause")
-            self.send_channel_msg("⏸️ Пауза / продолжение воспроизведения.")
+        # 5. LOOP / REPEAT (Toggle or set track repeat)
+        if cmd in ["loop", "repeat", "повтор", "зациклить"]:
+            with self.queue_lock:
+                if arg.lower() in ["on", "1", "вкл", "true"]:
+                    self.is_looping = True
+                elif arg.lower() in ["off", "0", "выкл", "false"]:
+                    self.is_looping = False
+                else:
+                    self.is_looping = not self.is_looping
+
+                if self.is_looping:
+                    self.send_channel_msg("🔁 Зацикливание включено: текущий трек будет повторяться.")
+                else:
+                    self.send_channel_msg("➡️ Зацикливание выключено: треки будут играть по очереди.")
             return
 
-        # 6. CLEAR
+        # 6. SKIP / NEXT
+        if cmd in ["skip", "next", "скип", "следующий", "след", "n"]:
+            with self.queue_lock:
+                self.command_bot_silent("!stop")
+                if self.queue:
+                    next_item = self.queue.pop(0)
+                    self.send_channel_msg("⏭️ Трек пропущен.")
+                    self.play_item(next_item, notify=True)
+                else:
+                    self.current_item = None
+                    self.clear_bot_avatar()
+                    self.send_channel_msg("⏭️ Трек пропущен. Очередь пуста.")
+            return
+
+        # 7. REMOVE / DEL (Remove track from queue)
+        if cmd in ["remove", "del", "delete", "rm", "удалить"]:
+            if not arg:
+                self.send_channel_msg("Укажите номер трека для удаления (например: !remove 2). Список очереди: !queue")
+                return
+            try:
+                idx = int(re.sub(r'[^0-9]', '', arg))
+                with self.queue_lock:
+                    if 1 <= idx <= len(self.queue):
+                        removed = self.queue.pop(idx - 1)
+                        self.send_channel_msg(f"🗑️ Удален из очереди (#{idx}): {removed['title']}")
+                    else:
+                        self.send_channel_msg(f"Номер вне диапазона. В очереди {len(self.queue)} треков. Проверьте: !queue")
+            except Exception:
+                self.send_channel_msg("Используйте: !remove <номер> (например: !remove 1)")
+            return
+
+        # 8. CLEAR (Clear upcoming queue)
         if cmd in ["clear", "очистить"]:
-            self.current_track_title = None
-            StreamHandler.current_stream_url = ""
-            StreamHandler.current_title = ""
-            self.command_bot_silent("!clear")
-            self.command_bot_silent("!stop")
-            self.clear_bot_avatar()
-            self.send_channel_msg("🗑️ Очередь очищена, воспроизведение остановлено.")
+            with self.queue_lock:
+                count = len(self.queue)
+                self.queue.clear()
+                self.send_channel_msg(f"🗑️ Очередь очищена (удалено треков: {count}). Текущий трек продолжает играть.")
             return
 
-        # 7. VOLUME / VOL
+        # 9. STOP / S
+        if cmd in ["stop", "s", "стоп"]:
+            with self.queue_lock:
+                self.queue.clear()
+                self.current_item = None
+                self.is_radio = False
+                StreamHandler.current_stream_url = ""
+                StreamHandler.current_title = ""
+                self.command_bot_silent("!stop")
+                self.clear_bot_avatar()
+                self.send_channel_msg("⏹️ Воспроизведение остановлено, очередь очищена.")
+            return
+
+        # 10. PAUSE / RESUME
+        if cmd in ["pause", "пауза", "resume"]:
+            self.command_bot_silent("!pause")
+            try:
+                with urllib.request.urlopen("http://127.0.0.1:58913/api/bot/use/0/(/song)", timeout=1) as r:
+                    data = json.loads(r.read().decode())
+                    if data.get("Paused", False):
+                        self.send_channel_msg("⏸️ Пауза (воспроизведение приостановлено).")
+                    else:
+                        self.send_channel_msg("▶️ Воспроизведение возобновлено.")
+            except Exception:
+                self.send_channel_msg("⏸️ Пауза / продолжение воспроизведения.")
+            return
+
+        # 11. VOLUME / VOL
         if cmd in ["volume", "vol", "громкость"]:
             if arg:
-                self.command_bot_silent(f"!volume {arg}")
-                self.send_channel_msg(f"🔊 Громкость установлена на {arg}%.")
+                try:
+                    vol_val = int(re.sub(r'[^0-9]', '', arg))
+                    vol_val = max(0, min(100, vol_val))
+                    self.command_bot_silent(f"!volume {vol_val}")
+                    self.send_channel_msg(f"🔊 Громкость установлена на {vol_val}%.")
+                except Exception:
+                    self.send_channel_msg("Используйте: !vol <0..100> (например: !vol 50)")
             else:
-                self.command_bot_silent("!volume")
+                try:
+                    with urllib.request.urlopen("http://127.0.0.1:58913/api/bot/use/0/(/volume)", timeout=1) as r:
+                        data = json.loads(r.read().decode())
+                        curr = int(data.get("Value", 50))
+                        self.send_channel_msg(f"🔊 Текущая громкость: {curr}%. (Для изменения: !vol <0..100>)")
+                except Exception:
+                    self.send_channel_msg("🔊 Громкость регулируется командой: !vol <0..100>")
             return
 
-        # 8. SONG / NP
+        # 12. SONG / NP
         if cmd in ["song", "np", "трек", "песня"]:
-            if self.current_track_title:
-                self.send_channel_msg(f"🎵 Сейчас играет: {self.current_track_title}")
-            else:
-                self.send_channel_msg("Сейчас ничего не играет. Включите трек: !play <название> или !radio 1..11")
+            with self.queue_lock:
+                if self.current_item:
+                    time_str = ""
+                    paused_str = ""
+                    is_active, data = self.is_bot_active()
+                    if is_active and data:
+                        pos = int(data.get("Position", 0))
+                        length = int(data.get("Length", 0))
+                        if data.get("Paused", False):
+                            paused_str = " (на паузе)"
+                        m1, s1 = divmod(pos, 60)
+                        if length > 0:
+                            m2, s2 = divmod(length, 60)
+                            time_str = f" [{m1:02d}:{s1:02d} / {m2:02d}:{s2:02d}]"
+                        elif pos > 0:
+                            time_str = f" [{m1:02d}:{s1:02d}]"
+
+                    loop_str = " • 🔁 Повтор: ВКЛ" if self.is_looping else ""
+                    q_count = f" • В очереди: {len(self.queue)}" if self.queue else ""
+                    self.send_channel_msg(f"🎵 Сейчас играет: {self.current_item['title']}{time_str}{paused_str}{loop_str}{q_count}")
+                else:
+                    self.send_channel_msg("Сейчас ничего не играет. Включите трек: !play <название> или !radio 1..11")
             return
 
     def run(self):
         sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
         start_stream_server(host=STREAM_HOST, port=self.stream_port)
+
+        # Start playback & queue monitoring thread
+        t_mon = threading.Thread(target=self.playback_monitor_loop, daemon=True)
+        t_mon.start()
+
         self.init_ym()
         self.connect()
 
