@@ -1,5 +1,10 @@
 # 🎵 VibeSpeak — TeamSpeak 6 MusicBot (Яндекс.Музыка & Радио)
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20Debian%2FUbuntu-informational.svg)](#)
+[![Python](https://img.shields.io/badge/Python-3.8%2B-brightgreen.svg)](#)
+[![TeamSpeak](https://img.shields.io/badge/TeamSpeak-3%20%2F%206-blue.svg)](#)
+
 Легковесный, надежный и функциональный музыкальный бот для **TeamSpeak 6** и **TeamSpeak 3** с поддержкой **Яндекс.Музыки** (полные треки, альбомы, плейлисты), **умной очереди воспроизведения**, **зацикливания треков** и проверенных **Интернет-радиостанций** (включая 24/7 Lo-Fi Hip Hop).
 
 > 🚫 **Примечание:** Сервисы **YouTube**, **SoundCloud** и **ВК Музыка** полностью отключены и заблокированы. Бот работает исключительно с **Яндекс.Музыкой** и **Интернет-радио**.
@@ -192,10 +197,13 @@
 ├── start_all.bat            # Запуск сервера и бота на Windows
 ├── start_bot.bat            # Запуск только бота на Windows
 ├── start_server.bat         # Запуск только сервера на Windows
+├── LICENSE                  # Лицензия проекта (GNU GPL v3.0)
 └── README.md                # Полная документация проекта
 ```
 
 ---
 
 ## 📜 Лицензия
-GPL-3.0.
+
+Проект распространяется под свободной лицензией **GNU General Public License v3.0 (GPL-3.0)**.  
+Подробный официальный текст лицензии доступен в файле [LICENSE](LICENSE).
